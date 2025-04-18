@@ -43,6 +43,42 @@ raspberry-pi-app
 
 2. Open your web browser and navigate to `http://<raspberry-pi-ip>:<port>` to access the web app.
 
+## Running the Cat Feeder on Raspberry Pi 4
+
+To set up and run the cat feeder application on a Raspberry Pi 4, follow these steps:
+
+1. **Prepare the Raspberry Pi 4**:
+   - Install Raspberry Pi OS on an SD card and boot up the Raspberry Pi 4.
+   - Ensure the Raspberry Pi is connected to the internet.
+
+2. **Clone the Repository**:
+   ```
+   git clone <repository-url>
+   cd raspberry-pi-app
+   ```
+
+3. **Install Dependencies**:
+   ```
+   npm install
+   ```
+
+4. **Connect the Cat Feeder Hardware**:
+   - Connect the cat feeder hardware to the GPIO pins of the Raspberry Pi 4 as per the hardware specifications.
+
+5. **Configure GPIO Pins**:
+   - Update the `gpio.ts` file in the `src` directory to match the GPIO pin configuration for the cat feeder.
+
+6. **Start the Application**:
+   ```
+   npm start
+   ```
+
+7. **Access the Web Interface**:
+   - Open a web browser and navigate to `http://<raspberry-pi-ip>:<port>` to control the cat feeder.
+
+8. **Test the Cat Feeder**:
+   - Use the web interface to test the functionality of the cat feeder, such as dispensing food.
+
 ## Features
 
 - Control GPIO pins to turn devices on and off.
