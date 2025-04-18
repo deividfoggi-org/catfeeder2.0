@@ -82,17 +82,26 @@ class SchedulerService {
         
         try {
             for (let i = 0; i < portions; i++) {
+                console.log(`Starting portion ${i+1}/${portions}`);
+                
                 // Turn motor on
                 GPIO.write(this.feederPin, 1);
+                console.log('Motor turned ON');
                 
-                // Run for 1 second per portion
+                // Wait for 4 seconds per portion
+                console.log('Waiting for 4 seconds...');
                 await new Promise(resolve => setTimeout(resolve, 4000));
                 
                 // Turn motor off
+                console.log('Turning motor OFF');
                 GPIO.write(this.feederPin, 0);
+                
+                // Add confirmation log
+                console.log(`Completed portion ${i+1}/${portions}`);
                 
                 // Wait between portions if there are more
                 if (i < portions - 1) {
+                    console.log('Waiting 500ms before next portion');
                     await new Promise(resolve => setTimeout(resolve, 500));
                 }
             }
@@ -100,6 +109,11 @@ class SchedulerService {
             console.log(`Feeder finished running for ${portions} portion(s)`);
         } catch (error) {
             console.error('Error running feeder:', error);
+            // Make sure to turn off the motor in case of error
+            if (this.feederPin) {
+                GPIO.write(this.feederPin, 0);
+                console.log('Motor turned OFF after error');
+            }
         }
     }
 
