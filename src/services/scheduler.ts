@@ -88,9 +88,19 @@ class SchedulerService {
                 GPIO.write(this.feederPin, 1);
                 console.log('Motor turned ON');
                 
-                // Wait for 4 seconds per portion
-                console.log('Waiting for 4 seconds...');
-                await new Promise(resolve => setTimeout(resolve, 4000));
+                // Wait for 4 seconds per portion using a more robust approach
+                console.log('Starting 4-second timer...');
+                const startTime = Date.now();
+                
+                // Use a more granular approach to track the time
+                for (let second = 1; second <= 4; second++) {
+                    await new Promise(resolve => setTimeout(resolve, 1000));
+                    console.log(`${second} seconds elapsed of 4`);
+                }
+                
+                // Verify total time elapsed
+                const elapsedMs = Date.now() - startTime;
+                console.log(`Total time elapsed: ${elapsedMs}ms`);
                 
                 // Turn motor off
                 console.log('Turning motor OFF');
