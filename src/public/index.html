@@ -40,6 +40,17 @@
             padding: 8px;
             text-align: left;
         }
+        footer {
+            margin-top: auto;
+            padding: 10px 0;
+            width: 100%;
+            text-align: center;
+            border-top: 1px solid #ddd;
+        }
+        #clock {
+            font-size: 1.2rem;
+            font-weight: bold;
+        }
     </style>
 </head>
 <body>
@@ -142,6 +153,9 @@
             <div id="gpio-status"></div>
         </section>
     </main>
+    <footer>
+        <div id="clock"></div>
+    </footer>
     <script>
         const dayMapping = {
             0: 'Sunday',
@@ -254,6 +268,19 @@
                 statusElement.innerText = 'Error toggling GPIO pin 17';
             });
         });
+
+        // Clock functionality
+        function updateClock() {
+            const now = new Date();
+            const hours = now.getHours().toString().padStart(2, '0');
+            const minutes = now.getMinutes().toString().padStart(2, '0');
+            const seconds = now.getSeconds().toString().padStart(2, '0');
+            document.getElementById('clock').textContent = `${hours}:${minutes}:${seconds}`;
+        }
+        
+        // Update clock immediately and then every second
+        updateClock();
+        setInterval(updateClock, 1000);
     </script>
 </body>
 </html>
