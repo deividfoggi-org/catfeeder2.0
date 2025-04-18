@@ -61,7 +61,8 @@ class GPIOController {
             const pin = GPIOController.pins.get(pinNumber)!;
             console.log(`Retrieved pin ${pinNumber}:`, pin);
 
-            GPIOController.runFeeder(pin, portions);
+            // Use the centralized method from GPIO
+            GPIO.runFeeder(pin, portions);
             console.log(`Feeder activated for ${portions} portion(s)`);
 
             res.status(200).json({
@@ -72,29 +73,6 @@ class GPIOController {
             console.error('Feeder activation error:', error);
             res.status(500).json({ message: 'Failed to activate feeder' });
         }
-    }
-
-    private static async runFeeder(pin: GPIO, portions: number) {
-        console.log('runFeeder called with pin:', pin, 'and portions:', portions);
-        for (let i = 0; i < portions; i++) {
-            console.log(`Running portion ${i + 1} of ${portions}`);
-
-            GPIO.write(pin, 1);
-            console.log('Motor turned on');
-
-            await new Promise(resolve => setTimeout(resolve, 1000));
-            console.log('1 second elapsed');
-
-            GPIO.write(pin, 0);
-            console.log('Motor turned off');
-
-            if (i < portions - 1) {
-                console.log('Waiting between portions');
-                await new Promise(resolve => setTimeout(resolve, 500));
-            }
-        }
-
-        console.log(`Feeder ran for ${portions} portion(s)`);
     }
 
     static cleanup() {

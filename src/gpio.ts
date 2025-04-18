@@ -36,6 +36,33 @@ class GPIO {
         // pigpio doesn't need explicit cleanup
         console.log('No cleanup needed for pigpio');
     }
+
+    static async runFeeder(pin: any, portions: number): Promise<void> {
+        console.log('Running feeder with pin:', pin, 'for portions:', portions);
+        
+        for (let i = 0; i < portions; i++) {
+            console.log(`Running portion ${i + 1} of ${portions}`);
+            
+            GPIO.write(pin, 1);
+            console.log('Motor turned on');
+            
+            // Wait for 4 seconds
+            for (let second = 1; second <= 4; second++) {
+                await new Promise(resolve => setTimeout(resolve, 4000));
+                console.log(`${second} seconds elapsed of 4`);
+            }
+            
+            GPIO.write(pin, 0);
+            console.log('Motor turned off');
+            
+            if (i < portions - 1) {
+                console.log('Waiting between portions');
+                await new Promise(resolve => setTimeout(resolve, 500));
+            }
+        }
+        
+        console.log(`Feeder ran for ${portions} portion(s)`);
+    }
 }
 
 export default GPIO;

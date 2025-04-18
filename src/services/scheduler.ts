@@ -78,52 +78,11 @@ class SchedulerService {
             return;
         }
 
-        console.log(`Running feeder for ${portions} portions`);
-        
         try {
-            for (let i = 0; i < portions; i++) {
-                console.log(`Starting portion ${i+1}/${portions}`);
-                
-                // Turn motor on
-                GPIO.write(this.feederPin, 1);
-                console.log('Motor turned ON');
-                
-                // Wait for 4 seconds per portion using a more robust approach
-                console.log('Starting 4-second timer...');
-                const startTime = Date.now();
-                
-                // Use a more granular approach to track the time
-                for (let second = 1; second <= 4; second++) {
-                    await new Promise(resolve => setTimeout(resolve, 1000));
-                    console.log(`${second} seconds elapsed of 4`);
-                }
-                
-                // Verify total time elapsed
-                const elapsedMs = Date.now() - startTime;
-                console.log(`Total time elapsed: ${elapsedMs}ms`);
-                
-                // Turn motor off ONLY after the full 4 seconds have elapsed
-                console.log('Turning motor OFF');
-                GPIO.write(this.feederPin, 0);
-                
-                // Add confirmation log
-                console.log(`Completed portion ${i+1}/${portions}`);
-                
-                // Wait between portions if there are more
-                if (i < portions - 1) {
-                    console.log('Waiting 500ms before next portion');
-                    await new Promise(resolve => setTimeout(resolve, 500));
-                }
-            }
-            
-            console.log(`Feeder finished running for ${portions} portion(s)`);
+            // Use the centralized GPIO method
+            await GPIO.runFeeder(this.feederPin, portions);
         } catch (error) {
             console.error('Error running feeder:', error);
-            // Make sure to turn off the motor in case of error
-            if (this.feederPin) {
-                GPIO.write(this.feederPin, 0);
-                console.log('Motor turned OFF after error');
-            }
         }
     }
 
