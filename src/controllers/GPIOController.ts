@@ -25,7 +25,7 @@ class GPIOController {
             const pin = GPIOController.pins.get(pinNumber)!;
             console.log(`Retrieved pin ${pinNumber}:`, pin);
 
-            const currentValue = pin.readSync();
+            const currentValue = GPIO.read(pin);
             console.log(`Current value of pin ${pinNumber}:`, currentValue);
 
             const newValue = currentValue === 0 ? 1 : 0;
