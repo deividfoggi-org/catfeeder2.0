@@ -47,7 +47,10 @@ class GPIO {
             console.log('Motor turned on');
             
             // Wait for 4 seconds
-            await new Promise(resolve => setTimeout(resolve, 1000));
+            for (let second = 1; second <= 4; second++) {
+                await new Promise(resolve => setTimeout(resolve, 1000));
+                console.log(`${second} seconds elapsed of 4`);
+            }
             
             GPIO.write(pin, 0);
             console.log('Motor turned off');
