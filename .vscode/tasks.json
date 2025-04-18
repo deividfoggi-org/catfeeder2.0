@@ -1,0 +1,25 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"type": "npm",
+			"script": "build",
+			"path": "catfeeder-app",
+			"group": "build",
+			"problemMatcher": [],
+			"label": "npm: build - catfeeder-app",
+			"detail": "tsc"
+		},
+		{
+			"label": "tsc: build - tsconfig.json",
+			"type": "shell",
+			"command": "${workspaceFolder}/node_modules/.bin/tsc",
+			"args": ["-p", "."],
+			"group": {
+				"kind": "build",
+				"isDefault": true
+			},
+			"problemMatcher": ["$tsc"]
+		}
+	]
+}

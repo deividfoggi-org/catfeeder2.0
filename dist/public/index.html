@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cat Feeder Management</title>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            height: 100vh;
+            margin: 0;
+            padding-top: 20px;
+        }
+        header, main {
+            text-align: center;
+        }
+        form {
+            display: inline-block;
+            text-align: left;
+        }
+        form div {
+            margin-bottom: 10px;
+        }
+        #schedule-status {
+            margin-top: 20px;
+        }
+        table {
+            margin-top: 20px;
+            border-collapse: collapse;
+            width: 100%;
+        }
+        table, th, td {
+            border: 1px solid black;
+        }
+        th, td {
+            padding: 8px;
+            text-align: left;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Cat Feeder Management</h1>
+    </header>
+    <main>
+        <section id="schedule-controls">
+            <h2>Schedule to feed the cats</h2>
+            <form id="schedule-form">
+                <div>
+                    <label>Days of the Week:</label>
+                    <div>
+                        <input type="checkbox" id="monday" name="days" value="1">
+                        <label for="monday">Monday</label>
+                        <input type="checkbox" id="tuesday" name="days" value="2">
+                        <label for="tuesday">Tuesday</label>
+                        <input type="checkbox" id="wednesday" name="days" value="3">
+                        <label for="wednesday">Wednesday</label>
+                        <input type="checkbox" id="thursday" name="days" value="4">
+                        <label for="thursday">Thursday</label>
+                        <input type="checkbox" id="friday" name="days" value="5">
+                        <label for="friday">Friday</label>
+                        <input type="checkbox" id="saturday" name="days" value="6">
+                        <label for="saturday">Saturday</label>
+                        <input type="checkbox" id="sunday" name="days" value="0">
+                        <label for="sunday">Sunday</label>
+                    </div>
+                </div>
+                <div>
+                    <label>Hours of the Day:</label>
+                    <div>
+                        <label for="hours-list">Select Hour:</label>
+                        <select id="hours-list" name="hours">
+                            <option value="0">12 AM</option>
+                            <option value="1">1 AM</option>
+                            <option value="2">2 AM</option>
+                            <option value="3">3 AM</option>
+                            <option value="4">4 AM</option>
+                            <option value="5">5 AM</option>
+                            <option value="6">6 AM</option>
+                            <option value="7">7 AM</option>
+                            <option value="8">8 AM</option>
+                            <option value="9">9 AM</option>
+                            <option value="10">10 AM</option>
+                            <option value="11">11 AM</option>
+                            <option value="12">12 PM</option>
+                            <option value="13">1 PM</option>
+                            <option value="14">2 PM</option>
+                            <option value="15">3 PM</option>
+                            <option value="16">4 PM</option>
+                            <option value="17">5 PM</option>
+                            <option value="18">6 PM</option>
+                            <option value="19">7 PM</option>
+                            <option value="20">8 PM</option>
+                            <option value="21">9 PM</option>
+                            <option value="22">10 PM</option>
+                            <option value="23">11 PM</option>
+                        </select>
+                    </div>
+                </div>
+                <div>
+                    <label for="portions-list">Select Portions:</label>
+                    <select id="portions-list" name="portions">
+                        <option value="1">1 Portion</option>
+                        <option value="2">2 Portions</option>
+                        <option value="3">3 Portions</option>
+                        <option value="4">4 Portions</option>
+                        <option value="5">5 Portions</option>
+                        <option value="6">6 Portions</option>
+                        <option value="7">7 Portions</option>
+                        <option value="8">8 Portions</option>
+                        <option value="9">9 Portions</option>
+                    </select>
+                </div>
+                <button type="button" id="add-schedule">Add Schedule</button>
+            </form>
+            <div id="schedule-status"></div>
+        </section>
+        <section id="existing-schedules">
+            <h2>Existing Schedules</h2>
+            <table id="schedules-table">
+                <thead>
+                    <tr>
+                        <th>Select</th>
+                        <th>Days</th>
+                        <th>Hour</th>
+                        <th>Portions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- Schedule rows will be added here dynamically -->
+                </tbody>
+            </table>
+            <button type="button" id="delete-schedules">Delete</button>
+        </section>
+    </main>
+    <script>
+        const dayMapping = {
+            0: 'Sunday',
+            1: 'Monday',
+            2: 'Tuesday',
+            3: 'Wednesday',
+            4: 'Thursday',
+            5: 'Friday',
+            6: 'Saturday'
+        };
+
+        document.getElementById('add-schedule').addEventListener('click', function() {
+            const days = Array.from(document.querySelectorAll('input[name="days"]:checked')).map(el => el.value);
+            const hours = document.getElementById('hours-list').value;
+            const portions = document.getElementById('portions-list').value;
+
+            fetch('/schedule', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ days, hours, portions })
+            })
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('schedule-status').innerText = `Schedule added successfully`;
+                loadSchedules();
+            });
+        });
+
+        function loadSchedules() {
+            fetch('/schedules')
+                .then(response => response.json())
+                .then(data => {
+                    const tbody = document.getElementById('schedules-table').querySelector('tbody');
+                    tbody.innerHTML = '';
+                    data.forEach(schedule => {
+                        const row = document.createElement('tr');
+                        const selectCell = document.createElement('td');
+                        const checkbox = document.createElement('input');
+                        checkbox.type = 'checkbox';
+                        checkbox.value = schedule.id; // Assuming each schedule has a unique ID
+                        selectCell.appendChild(checkbox);
+                        const daysCell = document.createElement('td');
+                        daysCell.innerText = schedule.days.map(day => dayMapping[day]).join(', ');
+                        const hoursCell = document.createElement('td');
+                        
+                        // Convert 24-hour format to 12-hour format with AM/PM
+                        let hours = schedule.hours;
+                        const ampm = hours >= 12 ? 'PM' : 'AM';
+                        hours = hours % 12;
+                        hours = hours ? hours : 12; // the hour '0' should be '12'
+                        const formattedHours = `${hours} ${ampm}`;
+                        
+                        hoursCell.innerText = formattedHours;
+                        
+                        const portionsCell = document.createElement('td');
+                        portionsCell.innerText = `${schedule.portions} Portion${schedule.portions > 1 ? 's' : ''}`; // Added Portions cell
+                        
+                        row.appendChild(selectCell);
+                        row.appendChild(daysCell);
+                        row.appendChild(hoursCell);
+                        row.appendChild(portionsCell); // Append Portions cell to the row
+                        tbody.appendChild(row);
+                    });
+                });
+        }
+
+        document.getElementById('delete-schedules').addEventListener('click', function() {
+            const selectedSchedules = Array.from(document.querySelectorAll('#schedules-table input[type="checkbox"]:checked')).map(el => el.value);
+
+            Promise.all(selectedSchedules.map(id => {
+                return fetch(`/schedule/${id}`, {
+                    method: 'DELETE'
+                });
+            }))
+            .then(responses => Promise.all(responses.map(res => res.json())))
+            .then(data => {
+                document.getElementById('schedule-status').innerText = `Selected schedules deleted successfully`;
+                loadSchedules();
+            });
+        });
+
+        // Load schedules on page load
+        loadSchedules();
+    </script>
+</body>
+</html>
