@@ -5,7 +5,7 @@ import GPIO from '../gpio';
 
 class SchedulerService {
     private static scheduleFilePath = path.join(__dirname, '../../data/schedules.txt');
-    private static feederPin: Gpio | null = null;
+    private static feederPin: GPIO | null = null;
     private static jobs: Map<string, cron.ScheduledTask> = new Map();
 
     // Initialize the scheduler
