@@ -175,7 +175,18 @@
         <h1>Cat Feeder Management</h1>
         <div id="clock"></div>
     </header>
-    <main>
+
+    <!-- Authentication section (visible by default) -->
+    <section id="auth-section">
+        <div class="auth-container" style="text-align: center; padding: 20px;">
+            <h2>Sign in to access Cat Feeder</h2>
+            <p>You need to authenticate to manage your cat feeder schedules</p>
+            <button id="loginButton" class="primary-button">Sign in with Outlook</button>
+        </div>
+    </section>
+
+    <!-- Main content (hidden by default) -->
+    <main id="main-content" style="display: none;">
         <section id="schedule-controls">
             <h2>Schedule to feed the cats</h2>
             <form id="schedule-form">
@@ -350,7 +361,6 @@
         </section>
         <section id="outlook-auth">
             <h2>Outlook Authentication</h2>
-            <button id="loginButton">Sign in with Outlook</button>
             <div id="userInfo" style="display: none;">
                 <p>Logged in as: <span id="userName"></span></p>
                 <button id="logoutButton">Sign out</button>
@@ -466,9 +476,6 @@
             });
         });
 
-        // Load schedules on page load
-        loadSchedules();
-        
         // GPIO Test Button - Toggle GPIO pin 17
         document.getElementById('test-gpio').addEventListener('click', function() {
             // Show loading state
@@ -529,7 +536,6 @@
         };
 
         document.getElementById("loginButton").addEventListener("click", signIn);
-        document.getElementById("logoutButton").addEventListener("click", signOut);
 
         function signIn() {
             msalInstance.loginPopup(loginRequest)
@@ -543,27 +549,55 @@
         }
 
         function signOut() {
-            msalInstance.logout();
+            const logoutRequest = {
+                account: msalInstance.getActiveAccount()
+            };
+            
+            msalInstance.logout(logoutRequest).then(() => {
+                updateUI(null);
+            });
         }
 
         function updateUI(account) {
             if (account) {
-                document.getElementById("userName").textContent = account.name;
-                document.getElementById("userInfo").style.display = "block";
-                document.getElementById("loginButton").style.display = "none";
+                // User is signed in, show content
+                document.getElementById("auth-section").style.display = "none";
+                document.getElementById("main-content").style.display = "block";
+                
+                // Update user info in the main content
+                const userInfoElement = document.getElementById("userInfo");
+                if (userInfoElement) {
+                    document.getElementById("userName").textContent = account.name;
+                    userInfoElement.style.display = "block";
+                }
+                
+                // Load schedules and other data only after authentication
+                loadSchedules();
             } else {
-                document.getElementById("userInfo").style.display = "none";
-                document.getElementById("loginButton").style.display = "block";
+                // User is not signed in, hide content
+                document.getElementById("auth-section").style.display = "block";
+                document.getElementById("main-content").style.display = "none";
             }
         }
 
-        // Check if user is already signed in
-        msalInstance.handleRedirectPromise().then(() => {
-            const accounts = msalInstance.getAllAccounts();
-            if (accounts.length > 0) {
-                updateUI(accounts[0]);
-            }
+        // Check if user is already signed in when page loads
+        window.addEventListener('load', () => {
+            msalInstance.handleRedirectPromise().then(() => {
+                const accounts = msalInstance.getAllAccounts();
+                if (accounts.length > 0) {
+                    msalInstance.setActiveAccount(accounts[0]);
+                    updateUI(accounts[0]);
+                } else {
+                    updateUI(null);
+                }
+            });
         });
+
+        // Add the logout handler to the button in the main content
+        const logoutButton = document.getElementById("logoutButton");
+        if (logoutButton) {
+            logoutButton.addEventListener("click", signOut);
+        }
     </script>
 </body>
 </html>
