@@ -86,7 +86,7 @@ class SchedulerService {
                 GPIO.write(this.feederPin, 1);
                 
                 // Run for 1 second per portion
-                await new Promise(resolve => setTimeout(resolve, 1000));
+                await new Promise(resolve => setTimeout(resolve, 4000));
                 
                 // Turn motor off
                 GPIO.write(this.feederPin, 0);

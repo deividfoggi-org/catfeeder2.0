@@ -81,9 +81,9 @@
                     </div>
                 </div>
                 <div>
-                    <label>Hours of the Day:</label>
+                    <label>Time:</label>
                     <div>
-                        <label for="hours-list">Select Hour:</label>
+                        <label for="hours-list">Hour:</label>
                         <select id="hours-list" name="hours">
                             <option value="0">12 AM</option>
                             <option value="1">1 AM</option>
@@ -109,6 +109,22 @@
                             <option value="21">9 PM</option>
                             <option value="22">10 PM</option>
                             <option value="23">11 PM</option>
+                        </select>
+                        
+                        <label for="minutes-list">Minute:</label>
+                        <select id="minutes-list" name="minutes">
+                            <option value="0">00</option>
+                            <option value="5">05</option>
+                            <option value="10">10</option>
+                            <option value="15">15</option>
+                            <option value="20">20</option>
+                            <option value="25">25</option>
+                            <option value="30">30</option>
+                            <option value="35">35</option>
+                            <option value="40">40</option>
+                            <option value="45">45</option>
+                            <option value="50">50</option>
+                            <option value="55">55</option>
                         </select>
                     </div>
                 </div>
@@ -137,7 +153,7 @@
                     <tr>
                         <th>Select</th>
                         <th>Days</th>
-                        <th>Hour</th>
+                        <th>Time</th>
                         <th>Portions</th>
                     </tr>
                 </thead>
@@ -170,14 +186,15 @@
         document.getElementById('add-schedule').addEventListener('click', function() {
             const days = Array.from(document.querySelectorAll('input[name="days"]:checked')).map(el => el.value);
             const hours = document.getElementById('hours-list').value;
+            const minutes = document.getElementById('minutes-list').value;
             const portions = document.getElementById('portions-list').value;
 
-            fetch('/schedules', { // Changed from /schedule to /schedules
+            fetch('/schedules', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify({ days, hours, portions })
+                body: JSON.stringify({ days, hours, minutes, portions })
             })
             .then(response => response.json())
             .then(data => {
@@ -201,24 +218,26 @@
                         selectCell.appendChild(checkbox);
                         const daysCell = document.createElement('td');
                         daysCell.innerText = schedule.days.map(day => dayMapping[day]).join(', ');
-                        const hoursCell = document.createElement('td');
+                        const timeCell = document.createElement('td');
                         
                         // Convert 24-hour format to 12-hour format with AM/PM
-                        let hours = schedule.hours;
+                        let hours = parseInt(schedule.hours);
+                        const minutes = parseInt(schedule.minutes || 0);
                         const ampm = hours >= 12 ? 'PM' : 'AM';
                         hours = hours % 12;
                         hours = hours ? hours : 12; // the hour '0' should be '12'
-                        const formattedHours = `${hours} ${ampm}`;
+                        const formattedMinutes = minutes.toString().padStart(2, '0');
+                        const formattedTime = `${hours}:${formattedMinutes} ${ampm}`;
                         
-                        hoursCell.innerText = formattedHours;
+                        timeCell.innerText = formattedTime;
                         
                         const portionsCell = document.createElement('td');
-                        portionsCell.innerText = `${schedule.portions} Portion${schedule.portions > 1 ? 's' : ''}`; // Added Portions cell
+                        portionsCell.innerText = `${schedule.portions} Portion${schedule.portions > 1 ? 's' : ''}`;
                         
                         row.appendChild(selectCell);
                         row.appendChild(daysCell);
-                        row.appendChild(hoursCell);
-                        row.appendChild(portionsCell); // Append Portions cell to the row
+                        row.appendChild(timeCell);
+                        row.appendChild(portionsCell);
                         tbody.appendChild(row);
                     });
                 });
@@ -236,7 +255,7 @@
             
             Promise.all(selectedSchedules.map(id => {
                 console.log(`Attempting to delete schedule with ID: ${id}`);
-                return fetch(`/schedules/${id}`, { // Changed from /schedule/:id to /schedules/:id
+                return fetch(`/schedules/${id}`, {
                     method: 'DELETE'
                 })
                 .then(res => {
