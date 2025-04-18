@@ -16,13 +16,13 @@ class GPIOController {
                 return;
             }
 
-            if (!this.pins.has(pinNumber)) {
+            if (!GPIOController.pins.has(pinNumber)) {
                 console.log(`Initializing GPIO pin ${pinNumber}`);
-                this.pins.set(pinNumber, GPIO.initialize(pinNumber));
+                GPIOController.pins.set(pinNumber, GPIO.initialize(pinNumber));
                 console.log(`GPIO pin ${pinNumber} initialized`);
             }
 
-            const pin = this.pins.get(pinNumber)!;
+            const pin = GPIOController.pins.get(pinNumber)!;
             console.log(`Retrieved pin ${pinNumber}:`, pin);
 
             const currentValue = pin.readSync();
@@ -53,15 +53,15 @@ class GPIOController {
             const portions = parseInt(req.query.portions as string || '1', 10);
             console.log('Parsed portions:', portions);
 
-            if (!this.pins.has(pinNumber)) {
+            if (!GPIOController.pins.has(pinNumber)) {
                 console.log(`Initializing GPIO pin ${pinNumber}`);
-                this.pins.set(pinNumber, GPIO.initialize(pinNumber));
+                GPIOController.pins.set(pinNumber, GPIO.initialize(pinNumber));
             }
 
-            const pin = this.pins.get(pinNumber)!;
+            const pin = GPIOController.pins.get(pinNumber)!;
             console.log(`Retrieved pin ${pinNumber}:`, pin);
 
-            this.runFeeder(pin, portions);
+            GPIOController.runFeeder(pin, portions);
             console.log(`Feeder activated for ${portions} portion(s)`);
 
             res.status(200).json({
@@ -99,7 +99,7 @@ class GPIOController {
 
     static cleanup() {
         console.log('cleanup called');
-        this.pins.forEach((pin, pinNumber) => {
+        GPIOController.pins.forEach((pin, pinNumber) => {
             try {
                 console.log(`Cleaning up GPIO pin ${pinNumber}`);
                 GPIO.cleanup(pin);
@@ -108,7 +108,7 @@ class GPIOController {
                 console.error(`Error cleaning up GPIO pin ${pinNumber}:`, error);
             }
         });
-        this.pins.clear();
+        GPIOController.pins.clear();
         console.log('All pins cleared');
     }
 }
