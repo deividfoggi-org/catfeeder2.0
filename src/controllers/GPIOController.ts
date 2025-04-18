@@ -66,7 +66,7 @@ class GPIOController {
     }
     
     // Method to run the feeder for a specific number of portions
-    private static async runFeeder(pin: Gpio, portions: number) {
+    private static async runFeeder(pin: GPIO, portions: number) {
         for (let i = 0; i < portions; i++) {
             // Turn motor on
             GPIO.write(pin, 1);

@@ -2,7 +2,6 @@ import fs from 'fs';
 import path from 'path';
 import cron from 'node-cron';
 import GPIO from '../gpio';
-import { Gpio } from 'onoff';
 
 class SchedulerService {
     private static scheduleFilePath = path.join(__dirname, '../../data/schedules.txt');
