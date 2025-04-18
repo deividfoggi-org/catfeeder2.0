@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Cat Feeder Management</title>
     <link rel="stylesheet" href="styles.css">
+    <script src="https://alcdn.msauth.net/browser/2.30.0/js/msal-browser.min.js"></script>
     <style>
         :root {
             --vscode-bg: #ffffff;
@@ -347,6 +348,14 @@
             <button type="button" id="test-gpio">Dispense 1 Portion</button>
             <div id="gpio-status"></div>
         </section>
+        <section id="outlook-auth">
+            <h2>Outlook Authentication</h2>
+            <button id="loginButton">Sign in with Outlook</button>
+            <div id="userInfo" style="display: none;">
+                <p>Logged in as: <span id="userName"></span></p>
+                <button id="logoutButton">Sign out</button>
+            </div>
+        </section>
     </main>
     <script>
         const dayMapping = {
@@ -500,6 +509,61 @@
         // Update clock immediately and then every second
         updateClock();
         setInterval(updateClock, 1000);
+
+        // Outlook Authentication
+        const msalConfig = {
+            auth: {
+                clientId: "20011978-4169-44c6-afc4-d210dd3b00f7", // Register your app in Azure Portal
+                authority: "https://login.microsoftonline.com/common",
+                redirectUri: "http://localhost:3000", // Your redirect URI
+            },
+            cache: {
+                cacheLocation: "sessionStorage",
+                storeAuthStateInCookie: false,
+            }
+        };
+
+        const msalInstance = new msal.PublicClientApplication(msalConfig);
+        const loginRequest = {
+            scopes: ["openid", "profile", "User.Read", "Mail.Read"]
+        };
+
+        document.getElementById("loginButton").addEventListener("click", signIn);
+        document.getElementById("logoutButton").addEventListener("click", signOut);
+
+        function signIn() {
+            msalInstance.loginPopup(loginRequest)
+                .then(response => {
+                    console.log("Login successful");
+                    updateUI(response.account);
+                })
+                .catch(error => {
+                    console.error("Login failed", error);
+                });
+        }
+
+        function signOut() {
+            msalInstance.logout();
+        }
+
+        function updateUI(account) {
+            if (account) {
+                document.getElementById("userName").textContent = account.name;
+                document.getElementById("userInfo").style.display = "block";
+                document.getElementById("loginButton").style.display = "none";
+            } else {
+                document.getElementById("userInfo").style.display = "none";
+                document.getElementById("loginButton").style.display = "block";
+            }
+        }
+
+        // Check if user is already signed in
+        msalInstance.handleRedirectPromise().then(() => {
+            const accounts = msalInstance.getAllAccounts();
+            if (accounts.length > 0) {
+                updateUI(accounts[0]);
+            }
+        });
     </script>
 </body>
 </html>
