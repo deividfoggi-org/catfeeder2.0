@@ -172,7 +172,7 @@
             const hours = document.getElementById('hours-list').value;
             const portions = document.getElementById('portions-list').value;
 
-            fetch('/schedule', {
+            fetch('/schedules', { // Changed from /schedule to /schedules
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -226,16 +226,39 @@
 
         document.getElementById('delete-schedules').addEventListener('click', function() {
             const selectedSchedules = Array.from(document.querySelectorAll('#schedules-table input[type="checkbox"]:checked')).map(el => el.value);
+            
+            if (selectedSchedules.length === 0) {
+                document.getElementById('schedule-status').innerText = 'Please select at least one schedule to delete';
+                return;
+            }
 
+            document.getElementById('schedule-status').innerText = 'Deleting selected schedules...';
+            
             Promise.all(selectedSchedules.map(id => {
-                return fetch(`/schedule/${id}`, {
+                console.log(`Attempting to delete schedule with ID: ${id}`);
+                return fetch(`/schedules/${id}`, { // Changed from /schedule/:id to /schedules/:id
                     method: 'DELETE'
+                })
+                .then(res => {
+                    if (!res.ok) {
+                        console.error(`Error deleting schedule ${id}:`, res.status);
+                        throw new Error(`Failed to delete schedule ${id}: ${res.status}`);
+                    }
+                    return res.json();
+                })
+                .catch(err => {
+                    console.error('Delete request failed:', err);
+                    throw err;
                 });
             }))
-            .then(responses => Promise.all(responses.map(res => res.json())))
             .then(data => {
+                console.log('Delete responses:', data);
                 document.getElementById('schedule-status').innerText = `Selected schedules deleted successfully`;
                 loadSchedules();
+            })
+            .catch(error => {
+                console.error('Error in delete operation:', error);
+                document.getElementById('schedule-status').innerText = `Error deleting schedules: ${error.message}`;
             });
         });
 
