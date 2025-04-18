@@ -1,6 +1,5 @@
 import { Request, Response } from 'express';
 import GPIO from '../gpio';
-import { Gpio } from 'onoff';
 
 class GPIOController {
     private static pins: Map<number, any> = new Map();
