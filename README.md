@@ -88,3 +88,105 @@ To set up and run the cat feeder application on a Raspberry Pi 4, follow these s
 ## Contributing
 
 Feel free to submit issues or pull requests to improve the application.
+
+## How to run it as a service in Raspberry Pi OS using systemctl
+
+To run the application as a service on Raspberry Pi OS, follow these steps:
+
+1. **Create a Service File**:
+   - Create a new file called `catfeeder.service` in the `/etc/systemd/system/` directory:
+     ```
+     sudo nano /etc/systemd/system/catfeeder.service
+     ```
+
+2. **Add Service Configuration**:
+   - Add the following content to the file:
+     ```
+     [Unit]
+     Description=Cat Feeder Application
+     After=network.target
+
+     [Service]
+     ExecStart=/usr/bin/npm start
+     WorkingDirectory=/home/pi/raspberry-pi-app
+     Restart=always
+     User=root
+     Environment=NODE_ENV=production
+
+     [Install]
+     WantedBy=multi-user.target
+     ```
+
+3. **Reload Systemd**:
+   ```
+   sudo systemctl daemon-reload
+   ```
+
+4. **Enable the Service**:
+   ```
+   sudo systemctl enable catfeeder.service
+   ```
+
+5. **Start the Service**:
+   ```
+   sudo systemctl start catfeeder.service
+   ```
+
+6. **Check Service Status**:
+   ```
+   sudo systemctl status catfeeder.service
+   ```
+
+   - Ensure the service is running without errors.
+
+7. **Access the Application**:
+   - Open a web browser and navigate to `http://<raspberry-pi-ip>:<port>` to use the application.
+
+By running the application as a service, it will automatically start on boot, ensuring the cat feeder is always available.
+
+## How to get changes from git, rebuild and restart the service
+
+1. **Pull the Latest Changes from Git**:
+   - Navigate to the project directory:
+     ```
+     cd /home/cat/catfeeder2.0
+     ```
+   - Pull the latest changes from the repository:
+     ```
+     git pull origin main
+     ```
+
+2. **Install Updated Dependencies**:
+   - If there are any new dependencies, install them:
+     ```
+     npm install
+     ```
+
+3. **Rebuild the Application**:
+   - If the application requires a build step (e.g., TypeScript compilation), run the build command:
+     ```
+     npm run build
+     ```
+
+4. **Restart the Service**:
+   - Restart the systemd service to apply the changes:
+     ```
+     sudo systemctl restart catfeeder.service
+     ```
+
+5. **Verify the Service Status**:
+   - Check the status of the service to ensure it restarted successfully:
+     ```
+     sudo systemctl status catfeeder.service
+     ```
+
+6. **Test the Application**:
+   - Open a web browser and navigate to `http://<raspberry-pi-ip>:<port>` to confirm the application is running with the latest changes.
+
+## How to access the log using journalctl
+
+Run the following command in Raspberry Pi
+
+```
+journalctl -u catfeeder.service -n 50 --no-pager
+```
