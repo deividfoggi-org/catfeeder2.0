@@ -1,64 +1,40 @@
-import { Gpio } from 'onoff';
+const Gpio = require('pigpio').Gpio;
 
 class GPIO {
-    static initialize(pin: number): Gpio {
+    static initialize(pin: number) {
         try {
-            // Add detailed logging
-            console.log(`Initializing GPIO pin ${pin}...`);
-            
-            // Special handling for pin 17
-            if (pin === 17) {
-                console.log('Special handling for pin 17');
-                
-                try {
-                    // Try to manually unexport first using Node's fs
-                    const fs = require('fs');
-                    if (fs.existsSync('/sys/class/gpio/gpio17')) {
-                        console.log('Unexporting pin 17 first...');
-                        fs.writeFileSync('/sys/class/gpio/unexport', '17');
-                    }
-                } catch (unexportError) {
-                    console.warn('Could not unexport pin 17:', unexportError);
-                    // Continue anyway, the onoff library might handle it
-                }
-            }
-            
-            // Initialize with direction 'out' and default to low state
-            return new Gpio(pin, 'out', 'none', { activeLow: false });
+            console.log(`Initializing GPIO pin ${pin} with pigpio...`);
+            // pigpio uses different initialization: OUTPUT = 1
+            return new Gpio(pin, {mode: 1});
         } catch (error) {
             console.error(`Failed to initialize GPIO pin ${pin}:`, error);
             throw error;
         }
     }
 
-    static write(pin: Gpio, value: number): void {
+    static write(pin: any, value: number): void {
         try {
-            console.log(`Writing value ${value} to pin`);
-            pin.writeSync(value);
+            // pigpio uses digitalWrite
+            pin.digitalWrite(value);
         } catch (error) {
             console.error(`Failed to write to GPIO pin:`, error);
             throw error;
         }
     }
 
-    static read(pin: Gpio): number {
+    static read(pin: any): number {
         try {
-            const value = pin.readSync();
-            console.log(`Read value ${value} from pin`);
-            return value;
+            // pigpio uses digitalRead
+            return pin.digitalRead();
         } catch (error) {
             console.error(`Failed to read from GPIO pin:`, error);
             throw error;
         }
     }
 
-    static cleanup(pin: Gpio): void {
-        try {
-            console.log(`Cleaning up GPIO pin...`);
-            pin.unexport();
-        } catch (error) {
-            console.error(`Failed to unexport GPIO pin:`, error);
-        }
+    static cleanup(pin: any): void {
+        // pigpio doesn't need explicit cleanup
+        console.log('No cleanup needed for pigpio');
     }
 }
 

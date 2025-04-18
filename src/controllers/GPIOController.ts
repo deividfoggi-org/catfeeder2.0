@@ -3,7 +3,7 @@ import GPIO from '../gpio';
 import { Gpio } from 'onoff';
 
 class GPIOController {
-    private static pins: Map<number, Gpio> = new Map();
+    private static pins: Map<number, any> = new Map();
 
     static togglePin(req: Request, res: Response): void {
         try {
