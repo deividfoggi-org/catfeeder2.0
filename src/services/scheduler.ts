@@ -102,7 +102,7 @@ class SchedulerService {
                 const elapsedMs = Date.now() - startTime;
                 console.log(`Total time elapsed: ${elapsedMs}ms`);
                 
-                // Turn motor off
+                // Turn motor off ONLY after the full 4 seconds have elapsed
                 console.log('Turning motor OFF');
                 GPIO.write(this.feederPin, 0);
                 
