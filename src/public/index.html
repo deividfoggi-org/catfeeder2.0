@@ -290,7 +290,7 @@
             const statusElement = document.getElementById('gpio-status');
             statusElement.innerText = 'Dispensing 1 portion...';
             
-            fetch('/gpio/17/toggle', {
+            fetch('/feed', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
