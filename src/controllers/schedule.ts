@@ -9,14 +9,15 @@ interface Schedule {
     id: string;
     days: string | string[];
     hours: string | string[];
+    minutes?: string | string[];
     portions: number;
 }
 
 class ScheduleController {
     static addSchedule(req: Request, res: Response) {
-        const { days, hours, portions } = req.body;
+        const { days, hours, minutes, portions } = req.body;
         const id = Date.now().toString();
-        const schedule: Schedule = { id, days, hours, portions };
+        const schedule: Schedule = { id, days, hours, minutes, portions };
         const crontabFormat = ScheduleController.convertToCrontab(schedule);
 
         fs.appendFile(scheduleFilePath, crontabFormat + '\n', (err) => {
@@ -71,16 +72,17 @@ class ScheduleController {
 
     static convertToCrontab(schedule: Schedule) {
         const hours = Array.isArray(schedule.hours) ? schedule.hours.join(',') : schedule.hours;
+        const minutes = schedule.minutes || '0'; // Default to '0' if not provided
         const allDays = ['0', '1', '2', '3', '4', '5', '6'];
         const days = Array.isArray(schedule.days) && schedule.days.sort().join(',') === allDays.join(',') 
             ? '*' 
             : Array.isArray(schedule.days) ? schedule.days.join(',') : schedule.days;
             
-        return `id=${schedule.id} 0 ${hours} * * ${days} portions=${schedule.portions}`;
+        return `id=${schedule.id} ${minutes} ${hours} * * ${days} portions=${schedule.portions}`;
     }
 
     static convertFromCrontab(crontab: string): Schedule {
-        const [idPart, minute, hours, dayMonth, month, days, portionsPart] = crontab.split(' ');
+        const [idPart, minutes, hours, dayMonth, month, days, portionsPart] = crontab.split(' ');
         const id = idPart.split('=')[1];
         const portions = parseInt(portionsPart.split('=')[1], 10);
         
@@ -88,6 +90,7 @@ class ScheduleController {
             id,
             days: days === '*' ? ['0', '1', '2', '3', '4', '5', '6'] : days.split(','),
             hours: hours.split(','),
+            minutes: minutes,
             portions
         };
     }
