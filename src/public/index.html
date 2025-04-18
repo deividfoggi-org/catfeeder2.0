@@ -165,7 +165,7 @@
         </section>
         <section id="manual-control">
             <h2>Manual Control</h2>
-            <button type="button" id="test-gpio">Test Feeder (Toggle GPIO 17)</button>
+            <button type="button" id="test-gpio">Dispense 1 Portion</button>
             <div id="gpio-status"></div>
         </section>
     </main>
@@ -288,13 +288,14 @@
         document.getElementById('test-gpio').addEventListener('click', function() {
             // Show loading state
             const statusElement = document.getElementById('gpio-status');
-            statusElement.innerText = 'Processing...';
+            statusElement.innerText = 'Dispensing 1 portion...';
             
             fetch('/gpio/17/toggle', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
-                }
+                },
+                body: JSON.stringify({ portions: 1 })
             })
             .then(response => {
                 if (!response.ok) {
@@ -303,11 +304,11 @@
                 return response.json();
             })
             .then(data => {
-                statusElement.innerText = data.message || 'GPIO pin 17 toggled';
+                statusElement.innerText = data.message || 'Dispensed 1 portion successfully';
             })
             .catch(error => {
-                console.error('Error toggling GPIO pin:', error);
-                statusElement.innerText = 'Error toggling GPIO pin 17';
+                console.error('Error dispensing portion:', error);
+                statusElement.innerText = 'Error dispensing portion';
             });
         });
 
