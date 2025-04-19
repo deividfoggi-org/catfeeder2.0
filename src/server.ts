@@ -1,11 +1,10 @@
 import express from 'express';
-import https from 'https';
 import http from 'http';
 import fs from 'fs';
 import path from 'path';
 import IndexController from './controllers/index';
 import ScheduleController from './controllers/schedule';
-import GPIOController from './controllers/GPIOController'; // Make sure this import exists
+import GPIOController from './controllers/GPIOController';
 import { Request, Response } from 'express';
 
 const app = express();
@@ -38,23 +37,10 @@ import SchedulerService from './services/scheduler';
 import controllers from './controllers';
 SchedulerService.init();
 
-// HTTPS server config
-const httpsOptions = {
-  key: fs.readFileSync(path.join(__dirname, '../certs/key.pem')),
-  cert: fs.readFileSync(path.join(__dirname, '../certs/cert.pem'))
-};
-
-// Create HTTPS server
-https.createServer(httpsOptions, app).listen(PORT, () => {
-  console.log(`HTTPS Server running on port ${PORT}`);
+// Create HTTP server
+http.createServer(app).listen(PORT, () => {
+  console.log(`HTTP Server running on port ${PORT}`);
 });
-
-// Optional: Redirect HTTP to HTTPS
-http.createServer((req, res) => {
-  const host = req.headers.host?.split(':')[0] || 'localhost';
-  res.writeHead(301, { Location: `http://${host}:${PORT}${req.url}` });
-  res.end();
-}).listen(80);
 
 // Graceful shutdown to clean up GPIO pins
 process.on('SIGINT', () => {
