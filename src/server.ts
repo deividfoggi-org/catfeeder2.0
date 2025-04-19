@@ -52,7 +52,7 @@ https.createServer(httpsOptions, app).listen(PORT, () => {
 // Optional: Redirect HTTP to HTTPS
 http.createServer((req, res) => {
   const host = req.headers.host?.split(':')[0] || 'localhost';
-  res.writeHead(301, { Location: `https://${host}:${PORT}${req.url}` });
+  res.writeHead(301, { Location: `http://${host}:${PORT}${req.url}` });
   res.end();
 }).listen(80);
 
