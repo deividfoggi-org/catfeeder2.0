@@ -9,7 +9,7 @@ import GPIOController from './controllers/GPIOController'; // Make sure this imp
 import { Request, Response } from 'express';
 
 const app = express();
-const PORT = process.env.PORT || 443;
+const PORT = process.env.PORT || 80;
 
 // Middleware
 app.use(express.json());
@@ -51,7 +51,8 @@ https.createServer(httpsOptions, app).listen(PORT, () => {
 
 // Optional: Redirect HTTP to HTTPS
 http.createServer((req, res) => {
-  res.writeHead(301, { Location: `https://localhost:${PORT}${req.url}` });
+  const host = req.headers.host?.split(':')[0] || 'localhost';
+  res.writeHead(301, { Location: `https://${host}:${PORT}${req.url}` });
   res.end();
 }).listen(80);
 
