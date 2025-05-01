@@ -586,6 +586,7 @@
             const loginButton = document.getElementById("loginButton");
             const userInfoElement = document.getElementById("userInfo");
             const userNameElement = document.getElementById("userName");
+            const logoutButton = document.getElementById("logoutButton");
             const authSection = document.getElementById("auth-section");
             const mainContent = document.getElementById("main-content");
 
@@ -598,6 +599,11 @@
                     userNameElement.textContent = account.name || account.username || "Unknown User";
                     userInfoElement.style.display = "block";
                 }
+
+                // Ensure the logout button is visible
+                if (logoutButton) {
+                    logoutButton.style.display = "inline-block";
+                }
             } else {
                 // Show the login button and hide user info
                 authSection.style.display = "flex"; // Ensure proper layout
@@ -605,6 +611,11 @@
 
                 if (userInfoElement) {
                     userInfoElement.style.display = "none";
+                }
+
+                // Hide the logout button
+                if (logoutButton) {
+                    logoutButton.style.display = "none";
                 }
             }
 
