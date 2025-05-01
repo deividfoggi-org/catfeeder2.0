@@ -171,9 +171,18 @@
     </style>
 </head>
 <body>
-    <header>
-        <h1>Cat Feeder Management</h1>
-        <div id="clock"></div>
+    <header style="display: flex; justify-content: space-between; align-items: center; width: 100%; padding: 0 20px;">
+        <div>
+            <h1>Cat Feeder Management</h1>
+            <div id="clock"></div>
+        </div>
+        <div id="auth-section" style="text-align: right;">
+            <div id="userInfo" style="display: none;">
+                <p style="margin: 0;">Logged in as: <span id="userName"></span></p>
+                <button id="logoutButton">Sign out</button>
+            </div>
+            <button id="loginButton" class="primary-button">Sign in with Outlook</button>
+        </div>
     </header>
 
     <!-- Authentication section (visible by default) -->
