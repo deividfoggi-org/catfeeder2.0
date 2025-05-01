@@ -658,6 +658,11 @@
         if (logoutButton) {
             logoutButton.addEventListener("click", signOut);
         }
+
+        window.addEventListener('load', () => {
+            console.log('Page loaded'); // Debugging log
+            loadSchedules(); // Explicitly call loadSchedules
+        });
     </script>
 </body>
 </html>
