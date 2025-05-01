@@ -597,12 +597,12 @@
 
                 if (userInfoElement && userNameElement) {
                     userNameElement.textContent = account.name || account.username || "Unknown User";
-                    userInfoElement.style.display = "block";
+                    userInfoElement.style.display = "block"; // Ensure user info is visible
                 }
 
                 // Ensure the logout button is visible
                 if (logoutButton) {
-                    logoutButton.style.display = "inline-block";
+                    logoutButton.style.display = "inline-block"; // Ensure logout button is visible
                     console.log("Logout button is now visible."); // Debugging log
                 } else {
                     console.error("Logout button not found in the DOM."); // Debugging log
@@ -613,7 +613,7 @@
                 mainContent.style.display = "none";
 
                 if (userInfoElement) {
-                    userInfoElement.style.display = "none";
+                    userInfoElement.style.display = "none"; // Hide user info
                 }
 
                 // Hide the logout button
