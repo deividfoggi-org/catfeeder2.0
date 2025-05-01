@@ -171,18 +171,28 @@
     </style>
 </head>
 <body>
-    <header style="display: flex; justify-content: space-between; align-items: center; width: 100%; padding: 0 20px;">
-        <div style="flex: 0 0 70%; display: flex; flex-direction: column;">
-            <h1 style="margin: 0;">Cat Feeder Management</h1>
-            <div id="clock" style="margin-top: 5px;"></div>
-        </div>
-        <div id="auth-section" style="flex: 0 0 30%; text-align: right;">
-            <div id="userInfo" style="display: none;">
-                <p style="margin: 0;">Logged in as: <span id="userName"></span></p>
-                <button id="logoutButton">Sign out</button>
-            </div>
-            <button id="loginButton" class="primary-button">Sign in with Outlook</button>
-        </div>
+    <header style="width: 100%; padding: 0 20px;">
+        <table style="width: 100%; table-layout: fixed;">
+            <tr>
+                <!-- Title and Clock Section -->
+                <td style="width: 70%; vertical-align: top;">
+                    <div style="display: flex; flex-direction: column;">
+                        <h1 style="margin: 0;">Cat Feeder Management</h1>
+                        <div id="clock" style="margin-top: 5px;"></div>
+                    </div>
+                </td>
+                <!-- Authentication Section -->
+                <td style="width: 30%; text-align: right; vertical-align: top;">
+                    <div id="auth-section">
+                        <div id="userInfo" style="display: none;">
+                            <p style="margin: 0;">Logged in as: <span id="userName"></span></p>
+                            <button id="logoutButton">Sign out</button>
+                        </div>
+                        <button id="loginButton" class="primary-button">Sign in with Outlook</button>
+                    </div>
+                </td>
+            </tr>
+        </table>
     </header>
 
     <!-- Authentication section (visible by default) -->
