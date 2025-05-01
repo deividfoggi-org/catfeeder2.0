@@ -1,5 +1,6 @@
 import express from 'express';
 import http from 'http';
+import https from 'https';
 import fs from 'fs';
 import path from 'path';
 import IndexController from './controllers/index';
@@ -9,6 +10,7 @@ import { Request, Response } from 'express';
 
 const app = express();
 const PORT = process.env.CATFEEDER_PORT || 3000;
+const HTTPS_PORT = PORT //process.env.CATFEEDER_HTTPS_PORT || 3443;
 
 // Middleware
 app.use(express.json());
@@ -34,12 +36,22 @@ app.use('/', router);
 
 // Initialize scheduler service
 import SchedulerService from './services/scheduler';
-import controllers from './controllers';
 SchedulerService.init();
+
+// Load SSL certificate and key
+const sslOptions = {
+  key: fs.readFileSync(path.join(__dirname, 'key.pem')),
+  cert: fs.readFileSync(path.join(__dirname, 'cert.pem')),
+};
 
 // Create HTTP server
 http.createServer(app).listen(PORT, () => {
   console.log(`HTTP Server running on port ${PORT}`);
+});
+
+// Create HTTPS server
+https.createServer(sslOptions, app).listen(HTTPS_PORT, () => {
+  console.log(`HTTPS Server running on port ${HTTPS_PORT}`);
 });
 
 // Graceful shutdown to clean up GPIO pins
