@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cat Feeder Management</title>
+    <title>Cat Feeder Manager</title>
     <link rel="stylesheet" href="styles.css">
     <script src="https://alcdn.msauth.net/browser/2.30.0/js/msal-browser.min.js"></script>
     <style>
@@ -558,11 +558,15 @@
         }
 
         function handleAuthResponse(response) {
+            console.log("Auth response:", response); // Debugging log
+
             if (response && response.account) {
                 msalInstance.setActiveAccount(response.account);
+                console.log("Active account set:", msalInstance.getActiveAccount()); // Debugging log
                 updateUI(response.account);
             } else {
                 console.error("No account information in response");
+                updateUI(null);
             }
         }
 
