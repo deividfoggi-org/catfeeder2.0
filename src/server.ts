@@ -10,7 +10,7 @@ import { Request, Response } from 'express';
 
 const app = express();
 const PORT = process.env.CATFEEDER_PORT || 3000;
-const HTTPS_PORT = PORT //process.env.CATFEEDER_HTTPS_PORT || 3443;
+const HTTPS_PORT = process.env.CATFEEDER_HTTPS_PORT || 3443;
 
 // Middleware
 app.use(express.json());
