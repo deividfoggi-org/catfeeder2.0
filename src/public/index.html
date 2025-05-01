@@ -394,6 +394,7 @@
         });
 
         function loadSchedules() {
+            console.log('loadSchedules function called'); // Debugging log
             fetch('/schedules')
                 .then(response => response.json())
                 .then(data => {
