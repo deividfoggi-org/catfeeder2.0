@@ -379,26 +379,63 @@
             const minutes = document.getElementById('minutes-list').value;
             const portions = document.getElementById('portions-list').value;
 
+            // Validate input
+            if (days.length === 0) {
+                document.getElementById('schedule-status').innerText = 'Please select at least one day';
+                return;
+            }
+
+            if (isNaN(hours) || hours < 0 || hours > 23) {
+                document.getElementById('schedule-status').innerText = 'Invalid hour selected';
+                return;
+            }
+
+            if (isNaN(minutes) || minutes < 0 || minutes > 59) {
+                document.getElementById('schedule-status').innerText = 'Invalid minute selected';
+                return;
+            }
+
+            if (isNaN(portions) || portions <= 0) {
+                document.getElementById('schedule-status').innerText = 'Invalid portions selected';
+                return;
+            }
+
+            // Construct the request payload
+            const payload = {
+                days,
+                hours,
+                minutes,
+                portions
+            };
+
+            // Send the request to the backend
             fetch('/schedules', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify({ days, hours, minutes, portions })
+                body: JSON.stringify(payload)
             })
-            .then(response => response.json())
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Failed to add schedule');
+                }
+                return response.json();
+            })
             .then(data => {
                 document.getElementById('schedule-status').innerText = `Schedule added successfully`;
                 loadSchedules();
+            })
+            .catch(error => {
+                console.error('Error adding schedule:', error);
+                document.getElementById('schedule-status').innerText = 'Error adding schedule';
             });
         });
 
         function loadSchedules() {
-            console.log('loadSchedules function called'); // Debugging log
             fetch('/schedules')
                 .then(response => response.json())
                 .then(data => {
-                    console.log('Schedules data:', data); // Debugging log
                     const tbody = document.getElementById('schedules-table').querySelector('tbody');
                     tbody.innerHTML = '';
                     data.forEach(schedule => {
@@ -660,8 +697,7 @@
         }
 
         window.addEventListener('load', () => {
-            console.log('Page loaded'); // Debugging log
-            loadSchedules(); // Explicitly call loadSchedules
+            loadSchedules();
         });
     </script>
 </body>
