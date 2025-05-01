@@ -70,6 +70,37 @@ class ScheduleController {
         });
     }
 
+    static deleteSchedules(req: Request, res: Response) {
+        const { ids } = req.body; // Expecting an array of IDs
+
+        if (!Array.isArray(ids) || ids.length === 0) {
+            return res.status(400).json({ message: 'Invalid or empty IDs array' });
+        }
+
+        fs.readFile(scheduleFilePath, 'utf8', (err, data) => {
+            if (err) {
+                return res.status(500).json({ message: 'Failed to read schedules' });
+            }
+
+            const schedules = data.trim().split('\n').filter(line => line);
+            const updatedSchedules = schedules.filter(schedule => {
+                const scheduleId = schedule.match(/id=([^\s]+)/)?.[1];
+                return scheduleId && !ids.includes(scheduleId);
+            });
+
+            fs.writeFile(scheduleFilePath, updatedSchedules.join('\n') + (updatedSchedules.length > 0 ? '\n' : ''), (err) => {
+                if (err) {
+                    return res.status(500).json({ message: 'Failed to delete schedules' });
+                }
+
+                // Refresh scheduler jobs
+                SchedulerService.loadSchedules();
+
+                res.status(200).json({ message: 'Schedules deleted successfully' });
+            });
+        });
+    }
+
     static convertToCrontab(schedule: Schedule) {
         const hours = Array.isArray(schedule.hours) ? schedule.hours.join(',') : schedule.hours;
         const minutes = schedule.minutes || '0'; // Default to '0' if not provided
