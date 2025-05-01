@@ -70,16 +70,18 @@ class ScheduleController {
         });
     }
 
-    static deleteSchedules(req: Request, res: Response) {
+    static deleteSchedules(req: Request, res: Response): void {
         const { ids } = req.body; // Expecting an array of IDs
 
         if (!Array.isArray(ids) || ids.length === 0) {
-            return res.status(400).json({ message: 'Invalid or empty IDs array' });
+            res.status(400).json({ message: 'Invalid or empty IDs array' });
+            return;
         }
 
         fs.readFile(scheduleFilePath, 'utf8', (err, data) => {
             if (err) {
-                return res.status(500).json({ message: 'Failed to read schedules' });
+                res.status(500).json({ message: 'Failed to read schedules' });
+                return;
             }
 
             const schedules = data.trim().split('\n').filter(line => line);
@@ -90,7 +92,8 @@ class ScheduleController {
 
             fs.writeFile(scheduleFilePath, updatedSchedules.join('\n') + (updatedSchedules.length > 0 ? '\n' : ''), (err) => {
                 if (err) {
-                    return res.status(500).json({ message: 'Failed to delete schedules' });
+                    res.status(500).json({ message: 'Failed to delete schedules' });
+                    return;
                 }
 
                 // Refresh scheduler jobs

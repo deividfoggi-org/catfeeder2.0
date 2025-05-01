@@ -27,12 +27,13 @@ router.get('/', IndexController.index);
 router.post('/schedules', ScheduleController.addSchedule);
 router.get('/schedules', ScheduleController.getSchedules);
 router.delete('/schedules/:id', ScheduleController.deleteSchedule);
-router.post('/schedules/delete-multiple', ScheduleController.deleteSchedules); // New route for deleting multiple schedules
+router.post('/schedules/delete-multiple', ScheduleController.deleteSchedules);
 
-// GPIO routes - Fixed syntax for route handlers
+// GPIO routes
 router.post('/gpio/:pin/toggle', GPIOController.togglePin);
 router.post('/feed', GPIOController.activateFeeder);
 
+// Mount the router
 app.use('/', router);
 
 // Initialize scheduler service
