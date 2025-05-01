@@ -179,11 +179,11 @@
         </div>
         <!-- Authentication Section -->
         <div id="auth-section" style="flex: 0 0 5%; text-align: right;">
-            <div id="userInfo" style="display: none;">
-                <p style="margin: 0;">Logged in as: <span id="userName"></span></p>
-                <button id="logoutButton">Sign out</button>
-            </div>
             <button id="loginButton" class="primary-button">Sign in with Outlook</button>
+        </div>
+        <div id="userInfo" style="display: none; text-align: right;">
+            <p style="margin: 0;">Logged in as: <span id="userName"></span></p>
+            <button id="logoutButton">Sign out</button>
         </div>
     </header>
 
@@ -608,8 +608,6 @@
                 if (logoutButton) {
                     logoutButton.style.display = "inline-block"; // Ensure logout button is visible
                     console.log("Logout button is now visible."); // Debugging log
-                } else {
-                    console.error("Logout button not found in the DOM."); // Debugging log
                 }
             } else {
                 // Show the login button and hide user info
