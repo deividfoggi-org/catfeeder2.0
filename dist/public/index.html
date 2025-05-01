@@ -5,7 +5,20 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Cat Feeder Management</title>
     <link rel="stylesheet" href="styles.css">
+    <script src="https://alcdn.msauth.net/browser/2.30.0/js/msal-browser.min.js"></script>
     <style>
+        :root {
+            --vscode-bg: #ffffff;
+            --vscode-fg: #1e1e1e;
+            --vscode-border: #e0e0e0;
+            --vscode-blue: #007acc;
+            --vscode-highlight: #e8e8e8;
+            --vscode-button-bg: #007acc;
+            --vscode-button-fg: #ffffff;
+            --vscode-button-hover: #0062a3;
+            --vscode-shadow: rgba(0, 0, 0, 0.1);
+        }
+        
         body {
             display: flex;
             flex-direction: column;
@@ -14,65 +27,217 @@
             height: 100vh;
             margin: 0;
             padding-top: 20px;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+            color: var(--vscode-fg);
+            background-color: var(--vscode-bg);
+            line-height: 1.5;
         }
+        
         header, main {
             text-align: center;
+            width: 90%;
+            max-width: 800px;
         }
+        
+        h1, h2 {
+            color: var(--vscode-blue);
+            margin-bottom: 1rem;
+        }
+        
+        section {
+            background-color: var(--vscode-bg);
+            border: 1px solid var(--vscode-border);
+            border-radius: 4px;
+            padding: 16px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 6px var(--vscode-shadow);
+        }
+        
         form {
             display: inline-block;
             text-align: left;
+            width: 100%;
         }
+        
         form div {
-            margin-bottom: 10px;
+            margin-bottom: 15px;
         }
-        #schedule-status {
-            margin-top: 20px;
+        
+        label {
+            display: inline-block;
+            margin-bottom: 5px;
+            font-weight: 500;
         }
+        
+        input[type="checkbox"] {
+            margin-right: 5px;
+            vertical-align: middle;
+        }
+        
+        select {
+            padding: 6px 10px;
+            border: 1px solid var(--vscode-border);
+            border-radius: 3px;
+            background-color: var(--vscode-bg);
+            margin-right: 10px;
+        }
+        
+        button {
+            background-color: var(--vscode-button-bg);
+            color: var(--vscode-button-fg);
+            border: none;
+            border-radius: 3px;
+            padding: 8px 16px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            font-weight: 500;
+        }
+        
+        button:hover {
+            background-color: var(--vscode-button-hover);
+        }
+        
+        #schedule-status, #gpio-status {
+            margin-top: 15px;
+            padding: 10px;
+            border-radius: 3px;
+            background-color: var(--vscode-highlight);
+        }
+        
         table {
             margin-top: 20px;
             border-collapse: collapse;
             width: 100%;
+            background-color: var(--vscode-bg);
         }
+        
         table, th, td {
-            border: 1px solid black;
+            border: 1px solid var(--vscode-border);
         }
+        
         th, td {
-            padding: 8px;
+            padding: 10px;
             text-align: left;
+        }
+        
+        th {
+            background-color: var(--vscode-highlight);
+            font-weight: 500;
+        }
+        
+        tr:hover {
+            background-color: var(--vscode-highlight);
+        }
+        
+        footer {
+            margin-top: auto;
+            padding: 10px 0;
+            width: 100%;
+            text-align: center;
+            border-top: 1px solid var(--vscode-border);
+        }
+        
+        #clock {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: var(--vscode-blue);
+            margin: 10px 0;
+            background-color: var(--vscode-highlight);
+            padding: 5px 10px;
+            border-radius: 3px;
+            display: inline-block;
+        }
+        
+        .days-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+        
+        .day-label {
+            display: flex;
+            align-items: center;
+            margin-right: 8px;
+        }
+        
+        #delete-schedules {
+            margin-top: 10px;
+            background-color: #d32f2f;
+        }
+        
+        #delete-schedules:hover {
+            background-color: #b71c1c;
         }
     </style>
 </head>
 <body>
-    <header>
-        <h1>Cat Feeder Management</h1>
+    <header style="display: flex; justify-content: space-between; align-items: center; width: 100%; padding: 0 20px; box-sizing: border-box;">
+        <!-- Title and Clock Section -->
+        <div style="flex: 0 0 70%; display: flex; flex-direction: column; justify-content: center;">
+            <h1 style="margin: 0;">Cat Feeder Management</h1>
+            <div id="clock" style="margin-top: 5px;"></div>
+        </div>
+        <!-- Authentication Section -->
+        <div id="auth-section" style="flex: 0 0 30%; text-align: right;">
+            <div id="userInfo" style="display: none;">
+                <p style="margin: 0;">Logged in as: <span id="userName"></span></p>
+                <button id="logoutButton">Sign out</button>
+            </div>
+            <button id="loginButton" class="primary-button">Sign in with Outlook</button>
+        </div>
     </header>
-    <main>
+
+    <!-- Authentication section (visible by default) -->
+    <section id="auth-section">
+        <div class="auth-container" style="text-align: center; padding: 20px;">
+            <h2>Sign in to access Cat Feeder</h2>
+            <p>You need to authenticate to manage your cat feeder schedules</p>
+            <button id="loginButton" class="primary-button">Sign in with Outlook</button>
+        </div>
+    </section>
+
+    <!-- Main content (hidden by default) -->
+    <main id="main-content" style="display: none;">
         <section id="schedule-controls">
             <h2>Schedule to feed the cats</h2>
             <form id="schedule-form">
                 <div>
                     <label>Days of the Week:</label>
-                    <div>
-                        <input type="checkbox" id="monday" name="days" value="1">
-                        <label for="monday">Monday</label>
-                        <input type="checkbox" id="tuesday" name="days" value="2">
-                        <label for="tuesday">Tuesday</label>
-                        <input type="checkbox" id="wednesday" name="days" value="3">
-                        <label for="wednesday">Wednesday</label>
-                        <input type="checkbox" id="thursday" name="days" value="4">
-                        <label for="thursday">Thursday</label>
-                        <input type="checkbox" id="friday" name="days" value="5">
-                        <label for="friday">Friday</label>
-                        <input type="checkbox" id="saturday" name="days" value="6">
-                        <label for="saturday">Saturday</label>
-                        <input type="checkbox" id="sunday" name="days" value="0">
-                        <label for="sunday">Sunday</label>
+                    <div class="days-container">
+                        <div class="day-label">
+                            <input type="checkbox" id="monday" name="days" value="1">
+                            <label for="monday">Monday</label>
+                        </div>
+                        <div class="day-label">
+                            <input type="checkbox" id="tuesday" name="days" value="2">
+                            <label for="tuesday">Tuesday</label>
+                        </div>
+                        <div class="day-label">
+                            <input type="checkbox" id="wednesday" name="days" value="3">
+                            <label for="wednesday">Wednesday</label>
+                        </div>
+                        <div class="day-label">
+                            <input type="checkbox" id="thursday" name="days" value="4">
+                            <label for="thursday">Thursday</label>
+                        </div>
+                        <div class="day-label">
+                            <input type="checkbox" id="friday" name="days" value="5">
+                            <label for="friday">Friday</label>
+                        </div>
+                        <div class="day-label">
+                            <input type="checkbox" id="saturday" name="days" value="6">
+                            <label for="saturday">Saturday</label>
+                        </div>
+                        <div class="day-label">
+                            <input type="checkbox" id="sunday" name="days" value="0">
+                            <label for="sunday">Sunday</label>
+                        </div>
                     </div>
                 </div>
                 <div>
-                    <label>Hours of the Day:</label>
+                    <label>Time:</label>
                     <div>
-                        <label for="hours-list">Select Hour:</label>
+                        <label for="hours-list">Hour:</label>
                         <select id="hours-list" name="hours">
                             <option value="0">12 AM</option>
                             <option value="1">1 AM</option>
@@ -98,6 +263,70 @@
                             <option value="21">9 PM</option>
                             <option value="22">10 PM</option>
                             <option value="23">11 PM</option>
+                        </select>
+                        
+                        <label for="minutes-list">Minute:</label>
+                        <select id="minutes-list" name="minutes">
+                            <option value="0">00</option>
+                            <option value="1">01</option>
+                            <option value="2">02</option>
+                            <option value="3">03</option>
+                            <option value="4">04</option>
+                            <option value="5">05</option>
+                            <option value="6">06</option>
+                            <option value="7">07</option>
+                            <option value="8">08</option>
+                            <option value="9">09</option>
+                            <option value="10">10</option>
+                            <option value="11">11</option>
+                            <option value="12">12</option>
+                            <option value="13">13</option>
+                            <option value="14">14</option>
+                            <option value="15">15</option>
+                            <option value="16">16</option>
+                            <option value="17">17</option>
+                            <option value="18">18</option>
+                            <option value="19">19</option>
+                            <option value="20">20</option>
+                            <option value="21">21</option>
+                            <option value="22">22</option>
+                            <option value="23">23</option>
+                            <option value="24">24</option>
+                            <option value="25">25</option>
+                            <option value="26">26</option>
+                            <option value="27">27</option>
+                            <option value="28">28</option>
+                            <option value="29">29</option>
+                            <option value="30">30</option>
+                            <option value="31">31</option>
+                            <option value="32">32</option>
+                            <option value="33">33</option>
+                            <option value="34">34</option>
+                            <option value="35">35</option>
+                            <option value="36">36</option>
+                            <option value="37">37</option>
+                            <option value="38">38</option>
+                            <option value="39">39</option>
+                            <option value="40">40</option>
+                            <option value="41">41</option>
+                            <option value="42">42</option>
+                            <option value="43">43</option>
+                            <option value="44">44</option>
+                            <option value="45">45</option>
+                            <option value="46">46</option>
+                            <option value="47">47</option>
+                            <option value="48">48</option>
+                            <option value="49">49</option>
+                            <option value="50">50</option>
+                            <option value="51">51</option>
+                            <option value="52">52</option>
+                            <option value="53">53</option>
+                            <option value="54">54</option>
+                            <option value="55">55</option>
+                            <option value="56">56</option>
+                            <option value="57">57</option>
+                            <option value="58">58</option>
+                            <option value="59">59</option>
                         </select>
                     </div>
                 </div>
@@ -126,7 +355,7 @@
                     <tr>
                         <th>Select</th>
                         <th>Days</th>
-                        <th>Hour</th>
+                        <th>Time</th>
                         <th>Portions</th>
                     </tr>
                 </thead>
@@ -135,6 +364,18 @@
                 </tbody>
             </table>
             <button type="button" id="delete-schedules">Delete</button>
+        </section>
+        <section id="manual-control">
+            <h2>Manual Control</h2>
+            <button type="button" id="test-gpio">Dispense 1 Portion</button>
+            <div id="gpio-status"></div>
+        </section>
+        <section id="outlook-auth">
+            <h2>Outlook Authentication</h2>
+            <div id="userInfo" style="display: none;">
+                <p>Logged in as: <span id="userName"></span></p>
+                <button id="logoutButton">Sign out</button>
+            </div>
         </section>
     </main>
     <script>
@@ -151,14 +392,15 @@
         document.getElementById('add-schedule').addEventListener('click', function() {
             const days = Array.from(document.querySelectorAll('input[name="days"]:checked')).map(el => el.value);
             const hours = document.getElementById('hours-list').value;
+            const minutes = document.getElementById('minutes-list').value;
             const portions = document.getElementById('portions-list').value;
 
-            fetch('/schedule', {
+            fetch('/schedules', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify({ days, hours, portions })
+                body: JSON.stringify({ days, hours, minutes, portions })
             })
             .then(response => response.json())
             .then(data => {
@@ -182,24 +424,26 @@
                         selectCell.appendChild(checkbox);
                         const daysCell = document.createElement('td');
                         daysCell.innerText = schedule.days.map(day => dayMapping[day]).join(', ');
-                        const hoursCell = document.createElement('td');
+                        const timeCell = document.createElement('td');
                         
                         // Convert 24-hour format to 12-hour format with AM/PM
-                        let hours = schedule.hours;
+                        let hours = parseInt(schedule.hours);
+                        const minutes = parseInt(schedule.minutes || 0);
                         const ampm = hours >= 12 ? 'PM' : 'AM';
                         hours = hours % 12;
                         hours = hours ? hours : 12; // the hour '0' should be '12'
-                        const formattedHours = `${hours} ${ampm}`;
+                        const formattedMinutes = minutes.toString().padStart(2, '0');
+                        const formattedTime = `${hours}:${formattedMinutes} ${ampm}`;
                         
-                        hoursCell.innerText = formattedHours;
+                        timeCell.innerText = formattedTime;
                         
                         const portionsCell = document.createElement('td');
-                        portionsCell.innerText = `${schedule.portions} Portion${schedule.portions > 1 ? 's' : ''}`; // Added Portions cell
+                        portionsCell.innerText = `${schedule.portions} Portion${schedule.portions > 1 ? 's' : ''}`;
                         
                         row.appendChild(selectCell);
                         row.appendChild(daysCell);
-                        row.appendChild(hoursCell);
-                        row.appendChild(portionsCell); // Append Portions cell to the row
+                        row.appendChild(timeCell);
+                        row.appendChild(portionsCell);
                         tbody.appendChild(row);
                     });
                 });
@@ -207,21 +451,205 @@
 
         document.getElementById('delete-schedules').addEventListener('click', function() {
             const selectedSchedules = Array.from(document.querySelectorAll('#schedules-table input[type="checkbox"]:checked')).map(el => el.value);
+            
+            if (selectedSchedules.length === 0) {
+                document.getElementById('schedule-status').innerText = 'Please select at least one schedule to delete';
+                return;
+            }
 
+            document.getElementById('schedule-status').innerText = 'Deleting selected schedules...';
+            
             Promise.all(selectedSchedules.map(id => {
-                return fetch(`/schedule/${id}`, {
+                console.log(`Attempting to delete schedule with ID: ${id}`);
+                return fetch(`/schedules/${id}`, {
                     method: 'DELETE'
+                })
+                .then(res => {
+                    if (!res.ok) {
+                        console.error(`Error deleting schedule ${id}:`, res.status);
+                        throw new Error(`Failed to delete schedule ${id}: ${res.status}`);
+                    }
+                    return res.json();
+                })
+                .catch(err => {
+                    console.error('Delete request failed:', err);
+                    throw err;
                 });
             }))
-            .then(responses => Promise.all(responses.map(res => res.json())))
             .then(data => {
+                console.log('Delete responses:', data);
                 document.getElementById('schedule-status').innerText = `Selected schedules deleted successfully`;
                 loadSchedules();
+            })
+            .catch(error => {
+                console.error('Error in delete operation:', error);
+                document.getElementById('schedule-status').innerText = `Error deleting schedules: ${error.message}`;
             });
         });
 
-        // Load schedules on page load
-        loadSchedules();
+        // GPIO Test Button - Toggle GPIO pin 17
+        document.getElementById('test-gpio').addEventListener('click', function() {
+            // Show loading state
+            const statusElement = document.getElementById('gpio-status');
+            statusElement.innerText = 'Dispensing 1 portion...';
+            
+            fetch('/feed', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ portions: 1 })
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                return response.json();
+            })
+            .then(data => {
+                statusElement.innerText = data.message || 'Dispensed 1 portion successfully';
+            })
+            .catch(error => {
+                console.error('Error dispensing portion:', error);
+                statusElement.innerText = 'Error dispensing portion';
+            });
+        });
+
+        // Clock functionality
+        function updateClock() {
+            const now = new Date();
+            const hours = now.getHours().toString().padStart(2, '0');
+            const minutes = now.getMinutes().toString().padStart(2, '0');
+            const seconds = now.getSeconds().toString().padStart(2, '0');
+            document.getElementById('clock').textContent = `${hours}:${minutes}:${seconds}`;
+        }
+        
+        // Update clock immediately and then every second
+        updateClock();
+        setInterval(updateClock, 1000);
+
+        // Outlook Authentication
+        const msalConfig = {
+            auth: {
+                clientId: "20011978-4169-44c6-afc4-d210dd3b00f7",
+                authority: "https://login.microsoftonline.com/consumers",
+                redirectUri: window.location.origin,
+            },
+            cache: {
+                cacheLocation: "sessionStorage",
+                storeAuthStateInCookie: true,
+            }
+        };
+
+        const msalInstance = new msal.PublicClientApplication(msalConfig);
+        const loginRequest = {
+            scopes: ["openid", "profile", "User.Read"]
+        };
+
+        document.getElementById("loginButton").addEventListener("click", signIn);
+
+        function signIn() {
+            document.getElementById("loginButton").textContent = "Signing in...";
+            document.getElementById("loginButton").disabled = true;
+            
+            msalInstance.ssoSilent(loginRequest)
+                .then(response => {
+                    console.log("Silent sign-in successful");
+                    handleAuthResponse(response);
+                })
+                .catch(error => {
+                    console.log("Silent sign-in error", error);
+                    msalInstance.loginPopup(loginRequest)
+                        .then(response => {
+                            console.log("Popup sign-in successful");
+                            handleAuthResponse(response);
+                        })
+                        .catch(error => {
+                            console.error("Sign-in failed", error);
+                            document.getElementById("loginButton").textContent = "Sign in with Outlook";
+                            document.getElementById("loginButton").disabled = false;
+                            alert("Sign-in failed. Please try again.");
+                        });
+                });
+        }
+
+        function handleAuthResponse(response) {
+            if (response && response.account) {
+                msalInstance.setActiveAccount(response.account);
+                updateUI(response.account);
+            } else {
+                console.error("No account information in response");
+            }
+        }
+
+        function signOut() {
+            const account = msalInstance.getActiveAccount();
+            if (account) {
+                msalInstance.logoutPopup({
+                    account: account,
+                    postLogoutRedirectUri: window.location.origin
+                }).then(() => {
+                    updateUI(null);
+                }).catch(error => {
+                    console.error("Logout failed", error);
+                });
+            } else {
+                updateUI(null);
+            }
+        }
+
+        function updateUI(account) {
+            const loginButton = document.getElementById("loginButton");
+            loginButton.textContent = "Sign in with Outlook";
+            loginButton.disabled = false;
+            
+            if (account) {
+                document.getElementById("auth-section").style.display = "none";
+                document.getElementById("main-content").style.display = "block";
+                
+                const userInfoElement = document.getElementById("userInfo");
+                if (userInfoElement) {
+                    document.getElementById("userName").textContent = account.name || account.username;
+                    userInfoElement.style.display = "block";
+                }
+                
+                loadSchedules();
+            } else {
+                document.getElementById("auth-section").style.display = "block";
+                document.getElementById("main-content").style.display = "none";
+                
+                const userInfoElement = document.getElementById("userInfo");
+                if (userInfoElement) {
+                    userInfoElement.style.display = "none";
+                }
+            }
+        }
+
+        window.addEventListener('load', () => {
+            msalInstance.handleRedirectPromise()
+                .then(response => {
+                    if (response) {
+                        handleAuthResponse(response);
+                    } else {
+                        const accounts = msalInstance.getAllAccounts();
+                        if (accounts.length > 0) {
+                            msalInstance.setActiveAccount(accounts[0]);
+                            updateUI(accounts[0]);
+                        } else {
+                            updateUI(null);
+                        }
+                    }
+                })
+                .catch(error => {
+                    console.error("Error during redirect handling:", error);
+                    updateUI(null);
+                });
+        });
+
+        const logoutButton = document.getElementById("logoutButton");
+        if (logoutButton) {
+            logoutButton.addEventListener("click", signOut);
+        }
     </script>
 </body>
 </html>
