@@ -58,8 +58,11 @@ http.createServer(app).listen(PORT, () => {
 });
 
 // Create HTTPS server
-https.createServer(sslOptions, app).listen(HTTPS_PORT, () => {
-  console.log(`HTTPS Server running on port ${HTTPS_PORT}`);
+https.createServer(sslOptions, app).listen({
+  port: HTTPS_PORT,
+  host: '0.0.0.0'
+}, () => {
+  console.log(`HTTPS Server running on port ${HTTPS_PORT} (IPv4)`);
 });
 
 // Graceful shutdown to clean up GPIO pins
