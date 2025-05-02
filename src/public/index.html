@@ -747,73 +747,80 @@
         }
 
         // Authentication toggle functionality
-        function setupAuthToggle() {
-            const authToggle = document.getElementById('authToggle');
-            const authToggleLabel = document.getElementById('authToggleLabel');
+        async function checkAuthStatus() {
+            try {
+                const response = await fetch('/auth-status');
+                const data = await response.json();
+                return data.authRequired;
+            } catch (error) {
+                console.error('Error checking auth status:', error);
+                return true; // Default to requiring auth if there's an error
+            }
+        }
 
-            // Get current auth state from backend
-            fetch('/auth-status')
-                .then(response => response.json())
-                .then(data => {
-                    const authRequired = data.authRequired !== false;
-                    
-                    // Set initial state of the toggle
-                    authToggle.checked = authRequired;
-                    updateAuthToggleLabel(authRequired);
-                    
-                    // Add event listener
-                    authToggle.addEventListener('change', function() {
-                        const newAuthRequired = this.checked;
-                        
-                        // Update the backend with the new state
-                        fetch('/auth-status', {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json'
-                            },
-                            body: JSON.stringify({ authRequired: newAuthRequired })
-                        })
-                        .then(response => response.json())
-                        .then(data => {
-                            if (data.success) {
-                                updateAuthToggleLabel(newAuthRequired);
-                                
-                                // Show banner if auth is disabled
-                                if (!newAuthRequired) {
-                                    showAuthDisabledBanner();
-                                } else {
-                                    removeAuthDisabledBanner();
-                                }
-                            } else {
-                                // Revert the toggle if update failed
-                                authToggle.checked = !newAuthRequired;
-                                updateAuthToggleLabel(!newAuthRequired);
-                                console.error("Failed to update auth status");
-                            }
-                        })
-                        .catch(error => {
-                            console.error("Error updating auth status:", error);
-                            // Revert the toggle on error
-                            authToggle.checked = !newAuthRequired;
-                            updateAuthToggleLabel(!newAuthRequired);
-                        });
-                    });
-                })
-                .catch(error => {
-                    console.error("Error fetching auth status:", error);
+        async function updateAuthStatus(authRequired) {
+            try {
+                const token = localStorage.getItem('authToken');
+                
+                if (!token && authRequired === false) {
+                    alert("You must be authenticated to disable authentication");
+                    return false;
+                }
+                
+                const response = await fetch('/auth-status', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token || ''}`
+                    },
+                    body: JSON.stringify({ authRequired })
                 });
+                
+                const result = await response.json();
+                
+                if (!result.success) {
+                    throw new Error(result.error || 'Failed to update authentication status');
+                }
+                
+                return true;
+            } catch (error) {
+                console.error('Error updating auth status:', error);
+                alert(`Failed to update authentication settings: ${error.message}`);
+                return false;
+            }
+        }
+
+        async function initAuthToggle() {
+            const toggle = document.getElementById('authToggle');
+            if (!toggle) return;
+            
+            const isAuthRequired = await checkAuthStatus();
+            toggle.checked = isAuthRequired;
+            updateAuthToggleLabel(isAuthRequired);
+            
+            toggle.addEventListener('change', async function() {
+                const newAuthRequired = this.checked;
+                const updated = await updateAuthStatus(newAuthRequired);
+                
+                if (!updated) {
+                    this.checked = !newAuthRequired;
+                    updateAuthToggleLabel(!newAuthRequired);
+                } else {
+                    updateAuthToggleLabel(newAuthRequired);
+                }
+            });
         }
 
         function updateAuthToggleLabel(authRequired) {
             const label = document.getElementById('authToggleLabel');
-            label.textContent = authRequired ? 'Authentication Required' : 'Authentication Disabled';
+            if (label) {
+                label.textContent = authRequired ? 'Authentication Required' : 'Authentication Disabled';
+            }
         }
 
         function showAuthDisabledBanner() {
-            // Remove existing banner if any
             removeAuthDisabledBanner();
             
-            // Create a banner
             const banner = document.createElement('div');
             banner.id = 'auth-disabled-banner';
             banner.style.backgroundColor = '#FFC107';
@@ -826,7 +833,6 @@
             banner.style.width = '100%';
             banner.textContent = 'Authentication Disabled - Anyone can access this page';
             
-            // Insert at the top of the body
             document.body.insertBefore(banner, document.body.firstChild);
         }
 
@@ -837,7 +843,6 @@
             }
         }
 
-        // Check authentication requirement on page load
         function checkAuthRequirement() {
             fetch('/auth-status')
                 .then(response => response.json())
@@ -845,7 +850,6 @@
                     const authRequired = data.authRequired !== false;
                     
                     if (!authRequired) {
-                        // If auth is not required, show the main content without login
                         document.getElementById('auth-section').style.display = 'none';
                         document.getElementById('main-content').style.display = 'block';
                         showAuthDisabledBanner();
@@ -857,10 +861,8 @@
         }
 
         window.addEventListener('load', () => {
-            // First check if auth is required
             checkAuthRequirement();
             
-            // Then proceed with normal auth flow
             msalInstance.handleRedirectPromise()
                 .then(response => {
                     if (response) {
@@ -887,6 +889,12 @@
         if (logoutButton) {
             logoutButton.addEventListener("click", signOut);
         }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            if (document.getElementById('authToggle')) {
+                initAuthToggle();
+            }
+        });
     </script>
 </body>
 </html>
