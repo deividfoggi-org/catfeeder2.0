@@ -613,54 +613,89 @@
                 clientId: "20011978-4169-44c6-afc4-d210dd3b00f7",
                 authority: "https://login.microsoftonline.com/consumers",
                 redirectUri: window.location.origin,
+                navigateToLoginRequestUrl: true,
+                postLogoutRedirectUri: window.location.origin
             },
             cache: {
-                cacheLocation: "localStorage", // Changed from sessionStorage for better persistence
+                cacheLocation: "localStorage",
                 storeAuthStateInCookie: true,
+                secureCookies: true
+            },
+            system: {
+                allowRedirectInIframe: true,
+                loggerOptions: {
+                    loggerCallback: (level, message, containsPii) => {
+                        if (!containsPii) console.log(message);
+                    },
+                    piiLoggingEnabled: false,
+                    logLevel: msal.LogLevel.Warning
+                }
             }
         };
 
         const msalInstance = new msal.PublicClientApplication(msalConfig);
-        const loginRequest = {
-            scopes: ["openid", "profile", "User.Read"]
-        };
-
-        document.getElementById("loginButton").addEventListener("click", signIn);
 
         function signIn() {
             document.getElementById("loginButton").textContent = "Signing in...";
             document.getElementById("loginButton").disabled = true;
             
-            // Detect if running on mobile device
             const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
             
+            const loginRequest = {
+                scopes: ["openid", "profile", "User.Read"],
+                prompt: "select_account",
+                state: window.location.hash || window.location.pathname
+            };
+            
+            clearSessionStorage();
+            
             if (isMobile) {
-                // For mobile, always use redirect approach
                 msalInstance.loginRedirect(loginRequest)
                     .catch(error => {
                         console.error("Redirect sign-in failed", error);
                         resetSignInButton();
                     });
             } else {
-                // For desktop, try silent authentication first
                 msalInstance.ssoSilent(loginRequest)
                     .then(handleAuthResponse)
                     .catch(error => {
                         console.log("Silent sign-in error", error);
-                        // Fall back to popup for desktop
                         msalInstance.loginPopup(loginRequest)
                             .then(handleAuthResponse)
                             .catch(error => {
-                                console.error("Sign-in failed", error);
+                                console.error("Popup sign-in failed", error);
                                 resetSignInButton();
-                                // If popup fails, try redirect as last resort
-                                if (error.name === "PopupWindowError") {
-                                    msalInstance.loginRedirect(loginRequest);
+                                
+                                if (error.errorCode === "user_cancelled") {
+                                    console.log("User cancelled the login");
+                                } else if (error.errorCode === "session_expired") {
+                                    alert("Your session has expired. Please sign in again.");
+                                } else {
+                                    console.error("Authentication error:", error.errorMessage);
                                 }
                             });
                     });
             }
         }
+
+        function clearSessionStorage() {
+            try {
+                Object.keys(sessionStorage)
+                    .filter(key => key.startsWith('msal.'))
+                    .forEach(key => sessionStorage.removeItem(key));
+                
+                document.cookie.split(';').forEach(cookie => {
+                    const [name] = cookie.trim().split('=');
+                    if (name.includes('ESTSAUTH') || name.includes('ESTSAUTHPERSISTENT')) {
+                        document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;`;
+                    }
+                });
+            } catch (e) {
+                console.error("Error clearing session data:", e);
+            }
+        }
+
+        document.getElementById("loginButton").addEventListener("click", signIn);
 
         function resetSignInButton() {
             document.getElementById("loginButton").textContent = "Sign in with Outlook";
@@ -679,41 +714,33 @@
 
         function updateUI(account) {
             if (account) {
-                // User is signed in
                 document.getElementById('auth-section').style.display = 'none';
                 document.getElementById('userInfo').style.display = 'block';
                 document.getElementById('userName').textContent = account.name || account.username || 'Signed In User';
                 document.getElementById('main-content').style.display = 'block';
                 
-                // Setup auth toggle when user is signed in
                 setupAuthToggle();
             } else {
-                // User is signed out - check if auth is required
                 fetch('/auth-status')
                     .then(response => response.json())
                     .then(data => {
                         const authRequired = data.authRequired !== false;
                         
                         if (authRequired) {
-                            // Normal authentication flow
                             document.getElementById('auth-section').style.display = 'block';
                             document.getElementById('userInfo').style.display = 'none';
                             document.getElementById('main-content').style.display = 'none';
                             resetSignInButton();
                         } else {
-                            // Skip authentication if disabled
                             document.getElementById('auth-section').style.display = 'none';
                             document.getElementById('userInfo').style.display = 'none';
                             document.getElementById('main-content').style.display = 'block';
                             showAuthDisabledBanner();
-                            
-                            // Show toggle to everyone when auth is disabled
                             showAuthToggleForPublic();
                         }
                     })
                     .catch(error => {
                         console.error("Error checking auth status:", error);
-                        // Default to requiring authentication if we can't check
                         document.getElementById('auth-section').style.display = 'block';
                         document.getElementById('userInfo').style.display = 'none';
                         document.getElementById('main-content').style.display = 'none';
@@ -749,7 +776,6 @@
             }
         }
 
-        // Authentication toggle functionality
         async function checkAuthStatus() {
             try {
                 const response = await fetch('/auth-status');
@@ -757,19 +783,17 @@
                 return data.authRequired;
             } catch (error) {
                 console.error('Error checking auth status:', error);
-                return true; // Default to requiring auth if there's an error
+                return true;
             }
         }
 
         async function updateAuthStatus(authRequired) {
             try {
-                // Get MSAL token for authorization
                 let token = '';
                 const account = msalInstance.getActiveAccount();
                 
                 if (account) {
                     try {
-                        // Get token silently from MSAL
                         const tokenResponse = await msalInstance.acquireTokenSilent({
                             scopes: ["openid", "profile", "User.Read"],
                             account: account
@@ -800,7 +824,6 @@
                     throw new Error(result.error || 'Failed to update authentication status');
                 }
                 
-                // If auth was disabled, show the banner
                 if (!authRequired) {
                     showAuthDisabledBanner();
                 } else {
@@ -890,7 +913,6 @@
         }
 
         function showAuthToggleForPublic() {
-            // Create a container for the public toggle
             const publicToggleContainer = document.getElementById('publicToggleContainer') || 
                 (() => {
                     const container = document.createElement('div');
@@ -916,15 +938,12 @@
                 </label>
             `;
             
-            // Initialize the toggle state
             const toggle = document.getElementById('publicAuthToggle');
-            toggle.checked = false; // Default to unchecked since auth is disabled
+            toggle.checked = false;
             
-            // Add event listener
             toggle.addEventListener('change', async function() {
                 const newAuthRequired = this.checked;
                 
-                // When enabling auth, no token is needed
                 const response = await fetch('/auth-status', {
                     method: 'POST',
                     headers: {
@@ -937,7 +956,6 @@
                 
                 if (result.success) {
                     if (newAuthRequired) {
-                        // If auth is now required, remove the public toggle and show auth section
                         document.getElementById('publicToggleContainer').remove();
                         document.getElementById('auth-section').style.display = 'block';
                         document.getElementById('main-content').style.display = 'none';
@@ -945,7 +963,6 @@
                         alert('Authentication has been enabled. Please sign in to continue.');
                     }
                 } else {
-                    // Revert toggle on error
                     toggle.checked = !newAuthRequired;
                     alert('Failed to update authentication settings');
                 }
