@@ -613,16 +613,18 @@
                 clientId: "20011978-4169-44c6-afc4-d210dd3b00f7",
                 authority: "https://login.microsoftonline.com/consumers",
                 redirectUri: window.location.origin,  
-                postLogoutRedirectUri: window.location.origin
+                postLogoutRedirectUri: window.location.origin,
+                navigateToLoginRequestUrl: true
             },
             cache: {
                 cacheLocation: "localStorage", 
                 storeAuthStateInCookie: true
             },
             system: {
-                windowHashTimeout: 60000, // Increase timeout for handling redirects
-                iframeHashTimeout: 6000,
-                navigateToLoginRequestUrl: true // Ensure proper redirect after login
+                windowHashTimeout: 90000, // Increased timeout for handling redirects
+                iframeHashTimeout: 10000, // Increased timeout for iframes
+                navigateFrameWait: 500,   // Time to wait for navigate frames
+                logLevel: msal.LogLevel.Verbose // Set to Verbose for detailed logging during troubleshooting
             }
         };
 
@@ -643,39 +645,13 @@
             };
             
             try {
-                // Azure Best Practice: Use different auth flows based on device type
-                if (isMobile) {
-                    // Azure Best Practice: Use redirect flow for mobile browsers
-                    console.log("Using redirect flow for mobile device");
-                    msalInstance.loginRedirect(loginRequest)
-                        .catch(error => {
-                            console.error("Sign-in redirect error:", error);
-                            resetSignInButton();
-                        });
-                } else {
-                    // Azure Best Practice: Use popup flow for desktop with fallback
-                    console.log("Using popup flow for desktop");
-                    msalInstance.loginPopup(loginRequest)
-                        .then(response => {
-                            console.log("Sign-in successful");
-                            handleAuthResponse(response);
-                        })
-                        .catch(error => {
-                            console.error("Sign-in popup error:", error);
-                            
-                            // Azure Best Practice: Fall back to redirect if popup fails
-                            if (error.name === "PopupBlockedError") {
-                                console.log("Popup blocked, falling back to redirect flow");
-                                msalInstance.loginRedirect(loginRequest)
-                                    .catch(redirectError => {
-                                        console.error("Sign-in redirect error:", redirectError);
-                                        resetSignInButton();
-                                    });
-                            } else {
-                                resetSignInButton();
-                            }
-                        });
-                }
+                // For more reliable authentication, consistently use redirect for all platforms
+                console.log("Using redirect flow for authentication");
+                msalInstance.loginRedirect(loginRequest)
+                    .catch(error => {
+                        console.error("Sign-in redirect error:", error);
+                        resetSignInButton();
+                    });
             } catch (error) {
                 console.error("Unexpected error during sign in:", error);
                 resetSignInButton();
@@ -975,12 +951,12 @@
                     console.log("Login successful via", event.interactionType);
                     handleAuthResponse(event.payload);
                 } else if (event.eventType === msal.EventType.LOGIN_FAILURE) {
-                    console.error("Login failed:", event.error);
+                    console.error("Login failed:", error);
                     resetSignInButton();
                 } else if (event.eventType === msal.EventType.ACQUIRE_TOKEN_SUCCESS) {
                     console.log("Token acquired successfully");
                 } else if (event.eventType === msal.EventType.ACQUIRE_TOKEN_FAILURE) {
-                    console.error("Token acquisition failed:", event.error);
+                    console.error("Token acquisition failed:", error);
                 } else if (event.eventType === msal.EventType.HANDLE_REDIRECT_START) {
                     console.log("Starting redirect handling");
                 } else if (event.eventType === msal.EventType.HANDLE_REDIRECT_END) {
@@ -988,10 +964,11 @@
                 }
             });
             
-            // Azure Best Practice: Handle redirect promises properly
+            // Azure Best Practice: Handle redirect promises properly with better error handling
+            console.log("Initializing MSAL and checking for redirect response");
             msalInstance.handleRedirectPromise()
                 .then(response => {
-                    console.log("Handling redirect response");
+                    console.log("Handling redirect response", response ? "with auth result" : "without auth result");
                     if (response) {
                         // Redirect response contains tokens/account
                         console.log("Received authentication result from redirect");
