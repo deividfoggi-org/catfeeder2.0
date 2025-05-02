@@ -740,25 +740,35 @@
                         // Azure Best Practice: Use appropriate scopes for your API
                         const tokenResponse = await msalInstance.acquireTokenSilent({
                             scopes: ["openid", "profile", "User.Read"],
-                            account: account
+                            account: account,
+                            forceRefresh: false
                         });
-                        token = tokenResponse.accessToken;
-                    } catch (error) {
-                        console.error("Token acquisition failed silently, falling back to interactive:", error);
                         
-                        // Azure Best Practice: Graceful fallback to interactive auth if silent fails
-                        try {
-                            const tokenResponse = await msalInstance.acquireTokenPopup({
-                                scopes: ["openid", "profile", "User.Read"]
-                            });
+                        if (tokenResponse && tokenResponse.accessToken) {
                             token = tokenResponse.accessToken;
-                        } catch (interactiveError) {
-                            console.error("Interactive token acquisition failed:", interactiveError);
+                            console.log("Token acquired silently");
+                        } else {
+                            console.warn("Silent token acquisition returned empty token");
+                        }
+                    } catch (error) {
+                        console.error("Token acquisition failed silently, falling back to redirect:", error);
+                        
+                        // Using redirect for consistency instead of popup
+                        try {
+                            // Initiate redirect flow for token acquisition
+                            await msalInstance.acquireTokenRedirect({
+                                scopes: ["openid", "profile", "User.Read"],
+                                redirectUri: window.location.origin
+                            });
+                            // Note: We won't reach this point immediately as the page will redirect
+                            return false;
+                        } catch (redirectError) {
+                            console.error("Interactive token acquisition failed:", redirectError);
                         }
                     }
                 }
                 
-                // Azure Best Practice: Only allow auth disabling by authenticated users
+                // Only allow auth disabling by authenticated users
                 if (!token && authRequired === false) {
                     alert("You must be authenticated to disable authentication");
                     return false;
@@ -1017,8 +1027,35 @@
             }
         }
 
+        function debugMsalState() {
+            console.log("--- MSAL Debug Info ---");
+            console.log("Active account:", msalInstance.getActiveAccount());
+            console.log("All accounts:", msalInstance.getAllAccounts());
+            
+            const storageKeys = Object.keys(localStorage).filter(key => key.includes('msal'));
+            console.log("MSAL localStorage keys:", storageKeys);
+            
+            storageKeys.forEach(key => {
+                try {
+                    const value = localStorage.getItem(key);
+                    console.log(`${key}: ${value ? value.substring(0, 50) + "..." : "null"}`);
+                } catch (e) {
+                    console.error(`Error reading ${key}:`, e);
+                }
+            });
+            
+            console.log("Browser details:", navigator.userAgent);
+            console.log("Current URL:", window.location.href);
+            console.log("--- End MSAL Debug Info ---");
+        }
+
         window.addEventListener('load', () => {
+            console.log("Page loaded - initializing auth");
             initializeAuth();
+            
+            // Debug MSAL state (remove in production)
+            setTimeout(debugMsalState, 2000);
+            
             // Other initialization code
             checkAuthStatus();
             loadSchedules();
