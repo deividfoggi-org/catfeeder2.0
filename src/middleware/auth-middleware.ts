@@ -30,7 +30,15 @@ export function checkAuthentication(req: Request, res: Response, next: NextFunct
 }
 
 export function checkAuthForToggle(req: Request, res: Response, next: NextFunction): void {
-    // Always require authentication for this endpoint
+    // Get current auth state to determine behavior
+    const currentAuthStatus = authHandler.getAuthStatus();
+    
+    // If auth is currently disabled, allow enabling it without requiring auth
+    if (!currentAuthStatus.authRequired && req.body.authRequired === true) {
+        return next();
+    }
+    
+    // Otherwise, require authentication for toggling
     if (req.headers.authorization) {
         const token = req.headers.authorization.split(' ')[1];
         
@@ -43,6 +51,6 @@ export function checkAuthForToggle(req: Request, res: Response, next: NextFuncti
     // User is not authenticated - can't toggle the auth setting
     res.status(401).json({ 
         success: false, 
-        error: 'You must be authenticated to change authentication settings' 
+        error: 'You must be authenticated to disable authentication settings' 
     });
 }
