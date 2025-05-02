@@ -694,24 +694,29 @@
 
         function updateUI(account) {
             if (account) {
+                // User is signed in
                 document.getElementById('auth-section').style.display = 'none';
                 document.getElementById('userInfo').style.display = 'block';
                 document.getElementById('userName').textContent = account.name || account.username || 'Signed In User';
                 document.getElementById('main-content').style.display = 'block';
                 
+                // Setup auth toggle when user is signed in
                 setupAuthToggle();
             } else {
+                // User is signed out - check if auth is required
                 fetch('/auth-status')
                     .then(response => response.json())
                     .then(data => {
                         const authRequired = data.authRequired !== false;
                         
                         if (authRequired) {
+                            // Normal authentication flow
                             document.getElementById('auth-section').style.display = 'block';
                             document.getElementById('userInfo').style.display = 'none';
                             document.getElementById('main-content').style.display = 'none';
                             resetSignInButton();
                         } else {
+                            // Skip authentication if disabled
                             document.getElementById('auth-section').style.display = 'none';
                             document.getElementById('userInfo').style.display = 'none';
                             document.getElementById('main-content').style.display = 'block';
@@ -721,38 +726,12 @@
                     })
                     .catch(error => {
                         console.error("Error checking auth status:", error);
+                        // Default to requiring authentication if we can't check
                         document.getElementById('auth-section').style.display = 'block';
                         document.getElementById('userInfo').style.display = 'none';
                         document.getElementById('main-content').style.display = 'none';
                         resetSignInButton();
                     });
-            }
-        }
-
-        function signOut() {
-            const account = msalInstance.getActiveAccount();
-            const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-            
-            if (account) {
-                if (isMobile) {
-                    msalInstance.logoutRedirect({
-                        account: account,
-                        postLogoutRedirectUri: window.location.origin
-                    }).catch(error => {
-                        console.error("Logout failed", error);
-                    });
-                } else {
-                    msalInstance.logoutPopup({
-                        account: account,
-                        postLogoutRedirectUri: window.location.origin
-                    }).then(() => {
-                        updateUI(null);
-                    }).catch(error => {
-                        console.error("Logout failed", error);
-                    });
-                }
-            } else {
-                updateUI(null);
             }
         }
 
@@ -763,7 +742,7 @@
                 return data.authRequired;
             } catch (error) {
                 console.error('Error checking auth status:', error);
-                return true;
+                return true; // Default to requiring auth if there's an error
             }
         }
 
@@ -774,16 +753,28 @@
                 
                 if (account) {
                     try {
+                        // Azure Best Practice: Use appropriate scopes for your API
                         const tokenResponse = await msalInstance.acquireTokenSilent({
                             scopes: ["openid", "profile", "User.Read"],
                             account: account
                         });
                         token = tokenResponse.accessToken;
                     } catch (error) {
-                        console.error("Error getting access token:", error);
+                        console.error("Token acquisition failed silently, falling back to interactive:", error);
+                        
+                        // Azure Best Practice: Graceful fallback to interactive auth if silent fails
+                        try {
+                            const tokenResponse = await msalInstance.acquireTokenPopup({
+                                scopes: ["openid", "profile", "User.Read"]
+                            });
+                            token = tokenResponse.accessToken;
+                        } catch (interactiveError) {
+                            console.error("Interactive token acquisition failed:", interactiveError);
+                        }
                     }
                 }
                 
+                // Azure Best Practice: Only allow auth disabling by authenticated users
                 if (!token && authRequired === false) {
                     alert("You must be authenticated to disable authentication");
                     return false;
@@ -818,19 +809,26 @@
             }
         }
 
+        function setupAuthToggle() {
+            initAuthToggle();
+        }
+
         async function initAuthToggle() {
             const toggle = document.getElementById('authToggle');
             if (!toggle) return;
             
+            // Set initial state
             const isAuthRequired = await checkAuthStatus();
             toggle.checked = isAuthRequired;
             updateAuthToggleLabel(isAuthRequired);
             
+            // Add event listener
             toggle.addEventListener('change', async function() {
                 const newAuthRequired = this.checked;
                 const updated = await updateAuthStatus(newAuthRequired);
                 
                 if (!updated) {
+                    // Revert the toggle if update failed
                     this.checked = !newAuthRequired;
                     updateAuthToggleLabel(!newAuthRequired);
                 } else {
@@ -847,8 +845,10 @@
         }
 
         function showAuthDisabledBanner() {
+            // Remove existing banner if any
             removeAuthDisabledBanner();
             
+            // Create a banner
             const banner = document.createElement('div');
             banner.id = 'auth-disabled-banner';
             banner.style.backgroundColor = '#FFC107';
@@ -861,6 +861,7 @@
             banner.style.width = '100%';
             banner.textContent = 'Authentication Disabled - Anyone can access this page';
             
+            // Insert at the top of the body
             document.body.insertBefore(banner, document.body.firstChild);
         }
 
@@ -878,6 +879,7 @@
                     const authRequired = data.authRequired !== false;
                     
                     if (!authRequired) {
+                        // If auth is not required, show the main content without login
                         document.getElementById('auth-section').style.display = 'none';
                         document.getElementById('main-content').style.display = 'block';
                         showAuthDisabledBanner();
@@ -888,11 +890,8 @@
                 });
         }
 
-        function setupAuthToggle() {
-            initAuthToggle();
-        }
-
         function showAuthToggleForPublic() {
+            // Create a container for the public toggle
             const publicToggleContainer = document.getElementById('publicToggleContainer') || 
                 (() => {
                     const container = document.createElement('div');
@@ -918,31 +917,42 @@
                 </label>
             `;
             
+            // Initialize the toggle state
             const toggle = document.getElementById('publicAuthToggle');
-            toggle.checked = false;
+            toggle.checked = false; // Default to unchecked since auth is disabled
             
+            // Add event listener
             toggle.addEventListener('change', async function() {
                 const newAuthRequired = this.checked;
                 
-                const response = await fetch('/auth-status', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ authRequired: newAuthRequired })
-                });
-                
-                const result = await response.json();
-                
-                if (result.success) {
-                    if (newAuthRequired) {
-                        document.getElementById('publicToggleContainer').remove();
-                        document.getElementById('auth-section').style.display = 'block';
-                        document.getElementById('main-content').style.display = 'none';
-                        removeAuthDisabledBanner();
-                        alert('Authentication has been enabled. Please sign in to continue.');
+                try {
+                    // When enabling auth, no token is needed
+                    const response = await fetch('/auth-status', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ authRequired: newAuthRequired })
+                    });
+                    
+                    const result = await response.json();
+                    
+                    if (result.success) {
+                        if (newAuthRequired) {
+                            // If auth is now required, remove the public toggle and show auth section
+                            document.getElementById('publicToggleContainer').remove();
+                            document.getElementById('auth-section').style.display = 'block';
+                            document.getElementById('main-content').style.display = 'none';
+                            removeAuthDisabledBanner();
+                            alert('Authentication has been enabled. Please sign in to continue.');
+                        }
+                    } else {
+                        // Revert toggle on error
+                        toggle.checked = !newAuthRequired;
+                        alert('Failed to update authentication settings');
                     }
-                } else {
+                } catch (error) {
+                    console.error('Error updating auth status:', error);
                     toggle.checked = !newAuthRequired;
                     alert('Failed to update authentication settings');
                 }
@@ -1003,6 +1013,11 @@
                 initAuthToggle();
             }
         });
+
+        const loginButton = document.getElementById('loginButton');
+        if (loginButton) {
+            loginButton.addEventListener('click', signIn);
+        }
     </script>
 </body>
 </html>

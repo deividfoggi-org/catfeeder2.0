@@ -76,13 +76,13 @@ process.on('SIGTERM', () => {
 });
 
 // Get current auth status - this is public, no auth needed
-app.get('/auth-status', (req: Request, res: Response): void => {
+app.get('/auth-status', (req: Request, res: Response) => {
   const authStatus = authHandler.getAuthStatus();
   res.json(authStatus);
 });
 
 // Update auth status - only accessible by authenticated users
-app.post('/auth-status', checkAuthForToggle, (req: Request, res: Response): void => {
+app.post('/auth-status', checkAuthForToggle, (req: Request, res: Response) => {
   const { authRequired } = req.body;
   
   if (typeof authRequired !== 'boolean') {

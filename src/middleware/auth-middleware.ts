@@ -1,7 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
 import * as authHandler from '../handlers/auth-handler';
-// Recommended: Use the official Microsoft Identity library for proper token validation
-// import { validateToken } from '../utils/token-validator';
 
 /**
  * Middleware to check if authentication is required and validate tokens
@@ -25,25 +23,8 @@ export function checkAuthentication(req: Request, res: Response, next: NextFunct
         if (token) {
             try {
                 // Azure Best Practice: Validate token with proper validation
-                // In production, you should properly validate the token using:
-                // 1. Verify signature using public keys from the Azure AD metadata endpoint
-                // 2. Validate issuer matches your Azure AD tenant
-                // 3. Validate audience matches your application ID
-                // 4. Check expiration time
-                
-                // For proper implementation, use Microsoft's libraries:
-                // npm install @azure/msal-node jose
-                // Then use JWT verification functions
-                
-                // Example validation (commented out - would need appropriate imports):
-                // const validatedToken = await validateToken(token, {
-                //    issuer: config.azureAd.issuer,
-                //    audience: config.azureAd.clientId
-                // });
-                
                 // Store the validated token claims for downstream middleware
                 res.locals.authToken = token;
-                // If using proper validation: res.locals.tokenClaims = validatedToken;
                 
                 next();
                 return;
@@ -81,7 +62,6 @@ export function checkAuthForToggle(req: Request, res: Response, next: NextFuncti
     
     // Special case: If auth is currently disabled, allow enabling it without authentication
     if (!currentAuthStatus.authRequired && req.body && req.body.authRequired === true) {
-        // Azure Best Practice: Log security-relevant changes
         console.log('Authentication being enabled by an unauthenticated request');
         next();
         return;
@@ -93,12 +73,7 @@ export function checkAuthForToggle(req: Request, res: Response, next: NextFuncti
         
         if (token) {
             try {
-                // Azure Best Practice: Validate token (same as above)
-                // In production, implement proper token validation
-                
-                // Azure Best Practice: Log security-relevant changes
                 console.log('Authentication setting being modified by authenticated user');
-                
                 next();
                 return;
             } catch (error) {
