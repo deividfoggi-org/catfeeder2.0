@@ -558,7 +558,7 @@
                 redirectUri: window.location.origin,
             },
             cache: {
-                cacheLocation: "sessionStorage",
+                cacheLocation: "localStorage", // Changed from sessionStorage for better persistence
                 storeAuthStateInCookie: true,
             }
         };
@@ -574,33 +574,45 @@
             document.getElementById("loginButton").textContent = "Signing in...";
             document.getElementById("loginButton").disabled = true;
             
-            msalInstance.ssoSilent(loginRequest)
-                .then(response => {
-                    console.log("Silent sign-in successful");
-                    handleAuthResponse(response);
-                })
-                .catch(error => {
-                    console.log("Silent sign-in error", error);
-                    msalInstance.loginPopup(loginRequest)
-                        .then(response => {
-                            console.log("Popup sign-in successful");
-                            handleAuthResponse(response);
-                        })
-                        .catch(error => {
-                            console.error("Sign-in failed", error);
-                            document.getElementById("loginButton").textContent = "Sign in with Outlook";
-                            document.getElementById("loginButton").disabled = false;
-                            alert("Sign-in failed. Please try again.");
-                        });
-                });
+            // Detect if running on mobile device
+            const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+            
+            if (isMobile) {
+                // For mobile, always use redirect approach
+                msalInstance.loginRedirect(loginRequest)
+                    .catch(error => {
+                        console.error("Redirect sign-in failed", error);
+                        resetSignInButton();
+                    });
+            } else {
+                // For desktop, try silent authentication first
+                msalInstance.ssoSilent(loginRequest)
+                    .then(handleAuthResponse)
+                    .catch(error => {
+                        console.log("Silent sign-in error", error);
+                        // Fall back to popup for desktop
+                        msalInstance.loginPopup(loginRequest)
+                            .then(handleAuthResponse)
+                            .catch(error => {
+                                console.error("Sign-in failed", error);
+                                resetSignInButton();
+                                // If popup fails, try redirect as last resort
+                                if (error.name === "PopupWindowError") {
+                                    msalInstance.loginRedirect(loginRequest);
+                                }
+                            });
+                    });
+            }
+        }
+
+        function resetSignInButton() {
+            document.getElementById("loginButton").textContent = "Sign in with Outlook";
+            document.getElementById("loginButton").disabled = false;
         }
 
         function handleAuthResponse(response) {
-            console.log("Auth response:", response); // Debugging log
-
             if (response && response.account) {
                 msalInstance.setActiveAccount(response.account);
-                console.log("Active account set:", msalInstance.getActiveAccount()); // Debugging log
                 updateUI(response.account);
             } else {
                 console.error("No account information in response");
@@ -610,60 +622,29 @@
 
         function signOut() {
             const account = msalInstance.getActiveAccount();
+            const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+            
             if (account) {
-                msalInstance.logoutPopup({
-                    account: account,
-                    postLogoutRedirectUri: window.location.origin
-                }).then(() => {
-                    updateUI(null);
-                }).catch(error => {
-                    console.error("Logout failed", error);
-                });
+                if (isMobile) {
+                    msalInstance.logoutRedirect({
+                        account: account,
+                        postLogoutRedirectUri: window.location.origin
+                    }).catch(error => {
+                        console.error("Logout failed", error);
+                    });
+                } else {
+                    msalInstance.logoutPopup({
+                        account: account,
+                        postLogoutRedirectUri: window.location.origin
+                    }).then(() => {
+                        updateUI(null);
+                    }).catch(error => {
+                        console.error("Logout failed", error);
+                    });
+                }
             } else {
                 updateUI(null);
             }
-        }
-
-        function updateUI(account) {
-            const loginButton = document.getElementById("loginButton");
-            const userInfoElement = document.getElementById("userInfo");
-            const userNameElement = document.getElementById("userName");
-            const logoutButton = document.getElementById("logoutButton");
-            const authSection = document.getElementById("auth-section");
-            const mainContent = document.getElementById("main-content");
-
-            if (account) {
-                // Hide the login button and show user info
-                authSection.style.display = "none";
-                mainContent.style.display = "block";
-
-                if (userInfoElement && userNameElement) {
-                    userNameElement.textContent = account.name || account.username || "Unknown User";
-                    userInfoElement.style.display = "block"; // Ensure user info is visible
-                }
-
-                // Ensure the logout button is visible
-                if (logoutButton) {
-                    logoutButton.style.display = "inline-block"; // Ensure logout button is visible
-                }
-            } else {
-                // Show the login button and hide user info
-                authSection.style.display = "flex"; // Ensure proper layout
-                mainContent.style.display = "none";
-
-                if (userInfoElement) {
-                    userInfoElement.style.display = "none"; // Hide user info
-                }
-
-                // Hide the logout button
-                if (logoutButton) {
-                    logoutButton.style.display = "none";
-                }
-            }
-
-            // Reset login button state
-            loginButton.textContent = "Sign in with Outlook";
-            loginButton.disabled = false;
         }
 
         window.addEventListener('load', () => {
