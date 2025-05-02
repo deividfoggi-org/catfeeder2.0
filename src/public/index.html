@@ -620,6 +620,22 @@
             }
         }
 
+        function updateUI(account) {
+            if (account) {
+                // User is signed in
+                document.getElementById('auth-section').style.display = 'none';
+                document.getElementById('userInfo').style.display = 'block';
+                document.getElementById('userName').textContent = account.name || account.username || 'Signed In User';
+                document.getElementById('main-content').style.display = 'block';
+            } else {
+                // User is signed out
+                document.getElementById('auth-section').style.display = 'block';
+                document.getElementById('userInfo').style.display = 'none';
+                document.getElementById('main-content').style.display = 'none';
+                resetSignInButton();
+            }
+        }
+
         function signOut() {
             const account = msalInstance.getActiveAccount();
             const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
