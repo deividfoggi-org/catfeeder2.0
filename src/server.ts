@@ -76,21 +76,22 @@ process.on('SIGTERM', () => {
 });
 
 // Get current auth status - this is public, no auth needed
-app.get('/auth-status', (req: Request, res: Response) => {
-    const authStatus = authHandler.getAuthStatus();
-    res.json(authStatus);
+app.get('/auth-status', (req: Request, res: Response): void => {
+  const authStatus = authHandler.getAuthStatus();
+  res.json(authStatus);
 });
 
 // Update auth status - only accessible by authenticated users
-app.post('/auth-status', checkAuthForToggle, (req: Request, res: Response) => {
-    const { authRequired } = req.body;
-    
-    if (typeof authRequired !== 'boolean') {
-        return res.status(400).json({ success: false, error: 'Invalid auth status value' });
-    }
-    
-    const result = authHandler.setAuthStatus(authRequired);
-    res.json(result);
+app.post('/auth-status', checkAuthForToggle, (req: Request, res: Response): void => {
+  const { authRequired } = req.body;
+  
+  if (typeof authRequired !== 'boolean') {
+    res.status(400).json({ success: false, error: 'Invalid auth status value' });
+    return;
+  }
+  
+  const result = authHandler.setAuthStatus(authRequired);
+  res.json(result);
 });
 
 export default app;

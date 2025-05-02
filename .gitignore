@@ -1,3 +1,6 @@
 node_modules
 *.pem
 .DS_Store
+
+# Authentication status file
+auth-status.txt

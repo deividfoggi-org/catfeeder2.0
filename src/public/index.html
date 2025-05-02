@@ -760,7 +760,22 @@
 
         async function updateAuthStatus(authRequired) {
             try {
-                const token = localStorage.getItem('authToken');
+                // Get MSAL token for authorization
+                let token = '';
+                const account = msalInstance.getActiveAccount();
+                
+                if (account) {
+                    try {
+                        // Get token silently from MSAL
+                        const tokenResponse = await msalInstance.acquireTokenSilent({
+                            scopes: ["openid", "profile", "User.Read"],
+                            account: account
+                        });
+                        token = tokenResponse.accessToken;
+                    } catch (error) {
+                        console.error("Error getting access token:", error);
+                    }
+                }
                 
                 if (!token && authRequired === false) {
                     alert("You must be authenticated to disable authentication");
@@ -771,7 +786,7 @@
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${token || ''}`
+                        'Authorization': token ? `Bearer ${token}` : ''
                     },
                     body: JSON.stringify({ authRequired })
                 });
@@ -780,6 +795,13 @@
                 
                 if (!result.success) {
                     throw new Error(result.error || 'Failed to update authentication status');
+                }
+                
+                // If auth was disabled, show the banner
+                if (!authRequired) {
+                    showAuthDisabledBanner();
+                } else {
+                    removeAuthDisabledBanner();
                 }
                 
                 return true;
@@ -858,6 +880,10 @@
                 .catch(error => {
                     console.error("Error checking auth requirement:", error);
                 });
+        }
+
+        function setupAuthToggle() {
+            initAuthToggle();
         }
 
         window.addEventListener('load', () => {
