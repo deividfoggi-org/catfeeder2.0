@@ -168,6 +168,55 @@
         #delete-schedules:hover {
             background-color: #b71c1c;
         }
+
+        /* Toggle switch styles */
+        .toggle-switch {
+            position: relative;
+            display: inline-flex;
+            align-items: center;
+            cursor: pointer;
+        }
+        
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        
+        .toggle-slider {
+            position: relative;
+            display: inline-block;
+            width: 36px;
+            height: 18px;
+            background-color: #ccc;
+            border-radius: 18px;
+            transition: .4s;
+            margin-right: 8px;
+        }
+        
+        .toggle-slider:before {
+            position: absolute;
+            content: "";
+            height: 14px;
+            width: 14px;
+            left: 2px;
+            bottom: 2px;
+            background-color: white;
+            border-radius: 50%;
+            transition: .4s;
+        }
+        
+        input:checked + .toggle-slider {
+            background-color: var(--vscode-blue);
+        }
+        
+        input:checked + .toggle-slider:before {
+            transform: translateX(18px);
+        }
+        
+        .toggle-label {
+            font-size: 14px;
+        }
     </style>
 </head>
 <body>
@@ -183,6 +232,14 @@
         </div>
         <div id="userInfo" style="display: none; text-align: right;">
             <p style="margin: 0;"><span id="userName"></span></p>
+            <!-- Add toggle switch for authentication -->
+            <div style="margin: 8px 0;">
+                <label class="toggle-switch">
+                    <input type="checkbox" id="authToggle">
+                    <span class="toggle-slider"></span>
+                    <span class="toggle-label" id="authToggleLabel">Authentication Required</span>
+                </label>
+            </div>
             <button id="logoutButton">Sign out</button>
         </div>
     </header>
@@ -627,12 +684,38 @@
                 document.getElementById('userInfo').style.display = 'block';
                 document.getElementById('userName').textContent = account.name || account.username || 'Signed In User';
                 document.getElementById('main-content').style.display = 'block';
+                
+                // Setup auth toggle when user is signed in
+                setupAuthToggle();
             } else {
                 // User is signed out
-                document.getElementById('auth-section').style.display = 'block';
-                document.getElementById('userInfo').style.display = 'none';
-                document.getElementById('main-content').style.display = 'none';
-                resetSignInButton();
+                fetch('/auth-status')
+                    .then(response => response.json())
+                    .then(data => {
+                        const authRequired = data.authRequired !== false;
+                        
+                        if (authRequired) {
+                            // Normal authentication flow
+                            document.getElementById('auth-section').style.display = 'block';
+                            document.getElementById('userInfo').style.display = 'none';
+                            document.getElementById('main-content').style.display = 'none';
+                            resetSignInButton();
+                        } else {
+                            // Skip authentication if disabled
+                            document.getElementById('auth-section').style.display = 'none';
+                            document.getElementById('userInfo').style.display = 'none';
+                            document.getElementById('main-content').style.display = 'block';
+                            showAuthDisabledBanner();
+                        }
+                    })
+                    .catch(error => {
+                        console.error("Error checking auth status:", error);
+                        // Default to requiring authentication if we can't check
+                        document.getElementById('auth-section').style.display = 'block';
+                        document.getElementById('userInfo').style.display = 'none';
+                        document.getElementById('main-content').style.display = 'none';
+                        resetSignInButton();
+                    });
             }
         }
 
@@ -663,7 +746,121 @@
             }
         }
 
+        // Authentication toggle functionality
+        function setupAuthToggle() {
+            const authToggle = document.getElementById('authToggle');
+            const authToggleLabel = document.getElementById('authToggleLabel');
+
+            // Get current auth state from backend
+            fetch('/auth-status')
+                .then(response => response.json())
+                .then(data => {
+                    const authRequired = data.authRequired !== false;
+                    
+                    // Set initial state of the toggle
+                    authToggle.checked = authRequired;
+                    updateAuthToggleLabel(authRequired);
+                    
+                    // Add event listener
+                    authToggle.addEventListener('change', function() {
+                        const newAuthRequired = this.checked;
+                        
+                        // Update the backend with the new state
+                        fetch('/auth-status', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({ authRequired: newAuthRequired })
+                        })
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.success) {
+                                updateAuthToggleLabel(newAuthRequired);
+                                
+                                // Show banner if auth is disabled
+                                if (!newAuthRequired) {
+                                    showAuthDisabledBanner();
+                                } else {
+                                    removeAuthDisabledBanner();
+                                }
+                            } else {
+                                // Revert the toggle if update failed
+                                authToggle.checked = !newAuthRequired;
+                                updateAuthToggleLabel(!newAuthRequired);
+                                console.error("Failed to update auth status");
+                            }
+                        })
+                        .catch(error => {
+                            console.error("Error updating auth status:", error);
+                            // Revert the toggle on error
+                            authToggle.checked = !newAuthRequired;
+                            updateAuthToggleLabel(!newAuthRequired);
+                        });
+                    });
+                })
+                .catch(error => {
+                    console.error("Error fetching auth status:", error);
+                });
+        }
+
+        function updateAuthToggleLabel(authRequired) {
+            const label = document.getElementById('authToggleLabel');
+            label.textContent = authRequired ? 'Authentication Required' : 'Authentication Disabled';
+        }
+
+        function showAuthDisabledBanner() {
+            // Remove existing banner if any
+            removeAuthDisabledBanner();
+            
+            // Create a banner
+            const banner = document.createElement('div');
+            banner.id = 'auth-disabled-banner';
+            banner.style.backgroundColor = '#FFC107';
+            banner.style.color = '#000';
+            banner.style.padding = '5px 10px';
+            banner.style.borderRadius = '4px';
+            banner.style.fontSize = '12px';
+            banner.style.marginTop = '5px';
+            banner.style.textAlign = 'center';
+            banner.style.width = '100%';
+            banner.textContent = 'Authentication Disabled - Anyone can access this page';
+            
+            // Insert at the top of the body
+            document.body.insertBefore(banner, document.body.firstChild);
+        }
+
+        function removeAuthDisabledBanner() {
+            const existingBanner = document.getElementById('auth-disabled-banner');
+            if (existingBanner) {
+                existingBanner.remove();
+            }
+        }
+
+        // Check authentication requirement on page load
+        function checkAuthRequirement() {
+            fetch('/auth-status')
+                .then(response => response.json())
+                .then(data => {
+                    const authRequired = data.authRequired !== false;
+                    
+                    if (!authRequired) {
+                        // If auth is not required, show the main content without login
+                        document.getElementById('auth-section').style.display = 'none';
+                        document.getElementById('main-content').style.display = 'block';
+                        showAuthDisabledBanner();
+                    }
+                })
+                .catch(error => {
+                    console.error("Error checking auth requirement:", error);
+                });
+        }
+
         window.addEventListener('load', () => {
+            // First check if auth is required
+            checkAuthRequirement();
+            
+            // Then proceed with normal auth flow
             msalInstance.handleRedirectPromise()
                 .then(response => {
                     if (response) {
@@ -682,16 +879,14 @@
                     console.error("Error during redirect handling:", error);
                     updateUI(null);
                 });
+            
+            loadSchedules();
         });
 
         const logoutButton = document.getElementById("logoutButton");
         if (logoutButton) {
             logoutButton.addEventListener("click", signOut);
         }
-
-        window.addEventListener('load', () => {
-            loadSchedules();
-        });
     </script>
 </body>
 </html>
