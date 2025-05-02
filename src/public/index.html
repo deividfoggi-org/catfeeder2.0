@@ -612,24 +612,17 @@
             auth: {
                 clientId: "20011978-4169-44c6-afc4-d210dd3b00f7",
                 authority: "https://login.microsoftonline.com/consumers",
-                redirectUri: window.location.origin,
-                navigateToLoginRequestUrl: true,
+                redirectUri: window.location.origin,  
                 postLogoutRedirectUri: window.location.origin
             },
             cache: {
-                cacheLocation: "localStorage",
-                storeAuthStateInCookie: true,
-                secureCookies: true
+                cacheLocation: "localStorage", 
+                storeAuthStateInCookie: true
             },
             system: {
-                allowRedirectInIframe: true,
-                loggerOptions: {
-                    loggerCallback: (level, message, containsPii) => {
-                        if (!containsPii) console.log(message);
-                    },
-                    piiLoggingEnabled: false,
-                    logLevel: msal.LogLevel.Warning
-                }
+                windowHashTimeout: 60000, // Increase timeout for handling redirects
+                iframeHashTimeout: 6000,
+                navigateToLoginRequestUrl: true // Ensure proper redirect after login
             }
         };
 
@@ -644,58 +637,42 @@
             const loginRequest = {
                 scopes: ["openid", "profile", "User.Read"],
                 prompt: "select_account",
-                state: window.location.hash || window.location.pathname
+                redirectStartPage: window.location.href // Ensure we return to the current page
             };
             
-            clearSessionStorage();
-            
+            // For mobile devices, use redirect flow
             if (isMobile) {
                 msalInstance.loginRedirect(loginRequest)
                     .catch(error => {
-                        console.error("Redirect sign-in failed", error);
+                        console.error("Login redirect error:", error);
                         resetSignInButton();
                     });
             } else {
-                msalInstance.ssoSilent(loginRequest)
-                    .then(handleAuthResponse)
+                // For desktop, use popup with proper configuration
+                // The key fix: Configure popup properly and handle the window closing
+                const popupWindowAttributes = {
+                    popupWindowAttributes: { width: 600, height: 600 }, 
+                    popupWindowTarget: "_blank"
+                };
+                
+                // Combine request with popup config
+                const popupRequest = {
+                    ...loginRequest,
+                    ...popupWindowAttributes
+                };
+                
+                // Use loginPopup instead of acquireTokenPopup for initial authentication
+                msalInstance.loginPopup(popupRequest)
+                    .then(response => {
+                        // This function gets called when popup authentication completes
+                        handleAuthResponse(response);
+                    })
                     .catch(error => {
-                        console.log("Silent sign-in error", error);
-                        msalInstance.loginPopup(loginRequest)
-                            .then(handleAuthResponse)
-                            .catch(error => {
-                                console.error("Popup sign-in failed", error);
-                                resetSignInButton();
-                                
-                                if (error.errorCode === "user_cancelled") {
-                                    console.log("User cancelled the login");
-                                } else if (error.errorCode === "session_expired") {
-                                    alert("Your session has expired. Please sign in again.");
-                                } else {
-                                    console.error("Authentication error:", error.errorMessage);
-                                }
-                            });
+                        console.error("Login popup error:", error);
+                        resetSignInButton();
                     });
             }
         }
-
-        function clearSessionStorage() {
-            try {
-                Object.keys(sessionStorage)
-                    .filter(key => key.startsWith('msal.'))
-                    .forEach(key => sessionStorage.removeItem(key));
-                
-                document.cookie.split(';').forEach(cookie => {
-                    const [name] = cookie.trim().split('=');
-                    if (name.includes('ESTSAUTH') || name.includes('ESTSAUTHPERSISTENT')) {
-                        document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;`;
-                    }
-                });
-            } catch (e) {
-                console.error("Error clearing session data:", e);
-            }
-        }
-
-        document.getElementById("loginButton").addEventListener("click", signIn);
 
         function resetSignInButton() {
             document.getElementById("loginButton").textContent = "Sign in with Outlook";
@@ -704,10 +681,13 @@
 
         function handleAuthResponse(response) {
             if (response && response.account) {
+                // Set the active account in MSAL
                 msalInstance.setActiveAccount(response.account);
+                
+                // Update the UI with the authenticated user
                 updateUI(response.account);
             } else {
-                console.error("No account information in response");
+                console.error("Auth response did not contain an account");
                 updateUI(null);
             }
         }
@@ -969,14 +949,28 @@
             });
         }
 
-        window.addEventListener('load', () => {
-            checkAuthRequirement();
+        function initializeAuth() {
+            // Register event callbacks for handling redirects
+            msalInstance.addEventCallback((event) => {
+                if (event.eventType === msal.EventType.LOGIN_SUCCESS) {
+                    // Handle successful login
+                    console.log("Login successful");
+                    handleAuthResponse(event.payload);
+                } else if (event.eventType === msal.EventType.LOGIN_FAILURE) {
+                    // Handle login failure
+                    console.error("Login failed:", event.error);
+                    resetSignInButton();
+                }
+            });
             
+            // Handle the redirect flow result on page load
             msalInstance.handleRedirectPromise()
                 .then(response => {
                     if (response) {
+                        // We have a response from a redirect
                         handleAuthResponse(response);
                     } else {
+                        // No redirect response, check if we have an active account
                         const accounts = msalInstance.getAllAccounts();
                         if (accounts.length > 0) {
                             msalInstance.setActiveAccount(accounts[0]);
@@ -987,10 +981,15 @@
                     }
                 })
                 .catch(error => {
-                    console.error("Error during redirect handling:", error);
+                    console.error("Error handling redirect:", error);
                     updateUI(null);
                 });
-            
+        }
+
+        window.addEventListener('load', () => {
+            initializeAuth();
+            // Other initialization code
+            checkAuthStatus();
             loadSchedules();
         });
 
