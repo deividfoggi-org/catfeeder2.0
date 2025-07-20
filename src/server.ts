@@ -59,10 +59,10 @@ app.use('/api', apiRouter); // Protected API routes
 import SchedulerService from './services/scheduler';
 SchedulerService.init();
 
-// Load SSL certificate and key
+// Load SSL certificate and key using absolute path
 const sslOptions = {
-  key: fs.readFileSync('key.pem'),
-  cert: fs.readFileSync('cert.pem'),
+  key: fs.readFileSync(path.resolve(__dirname, '../key.pem')),
+  cert: fs.readFileSync(path.resolve(__dirname, '../cert.pem')),
 };
 
 // Create HTTP server
