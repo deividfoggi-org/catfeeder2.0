@@ -556,7 +556,7 @@
             };
 
             // Send the request to the backend
-            fetch('/schedules', {
+            fetch('/api/schedules', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -580,7 +580,7 @@
         });
 
         function loadSchedules() {
-            fetch('/schedules')
+            fetch('/api/schedules')
                 .then(response => response.json())
                 .then(data => {
                     const tbody = document.getElementById('schedules-table').querySelector('tbody');
@@ -633,7 +633,7 @@
             document.getElementById('schedule-status').innerText = 'Deleting selected schedules...';
 
             // Send a POST request to delete multiple schedules
-            fetch('/schedules/delete-multiple', {
+            fetch('/api/schedules/delete-multiple', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
