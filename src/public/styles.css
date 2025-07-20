@@ -1,11 +1,14 @@
 /* Feed log limit control styles */
+.feed-logs-section {
+    text-align: right;
+}
 
 .feed-log-limit-control {
     margin-bottom: 10px;
-    display: flex;
-    justify-content: flex-end;
+    display: inline-flex;
     align-items: center;
     gap: 6px;
+}
 }
 
 .feed-log-limit-input {
