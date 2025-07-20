@@ -780,31 +780,32 @@
                 
                 // Setup auth toggle when user is signed in
                 setupAuthToggle();
+                // Always load feed logs when signed in
+                loadFeedLogs();
             } else {
                 // User is signed out - check if auth is required
                 fetch('/auth-status')
                     .then(response => response.json())
                     .then(data => {
                         const authRequired = data.authRequired !== false;
-                        
                         if (authRequired) {
-                            // Normal authentication flow
                             document.getElementById('auth-section').style.display = 'block';
                             document.getElementById('userInfo').style.display = 'none';
                             document.getElementById('main-content').style.display = 'none';
                             resetSignInButton();
                         } else {
-                            // Skip authentication if disabled
                             document.getElementById('auth-section').style.display = 'none';
                             document.getElementById('userInfo').style.display = 'none';
                             document.getElementById('main-content').style.display = 'block';
                             showAuthDisabledBanner();
-                            showAuthToggleForPublic();
+                            // REMOVE floating auth toggle for public
+                            // showAuthToggleForPublic();
+                            // Always load feed logs for public
+                            loadFeedLogs();
                         }
                     })
                     .catch(error => {
                         console.error("Error checking auth status:", error);
-                        // Default to requiring authentication if we can't check
                         document.getElementById('auth-section').style.display = 'block';
                         document.getElementById('userInfo').style.display = 'none';
                         document.getElementById('main-content').style.display = 'none';
@@ -1045,74 +1046,7 @@
                 });
         }
 
-        function showAuthToggleForPublic() {
-            // Create a container for the public toggle
-            const publicToggleContainer = document.getElementById('publicToggleContainer') || 
-                (() => {
-                    const container = document.createElement('div');
-                    container.id = 'publicToggleContainer';
-                    container.style.position = 'fixed';
-                    container.style.bottom = '20px';
-                    container.style.right = '20px';
-                    container.style.padding = '15px';
-                    container.style.backgroundColor = '#f8f9fa';
-                    container.style.borderRadius = '5px';
-                    container.style.boxShadow = '0 2px 10px rgba(0,0,0,0.2)';
-                    container.style.zIndex = '1000';
-                    document.body.appendChild(container);
-                    return container;
-                })();
-            
-            publicToggleContainer.innerHTML = `
-                <div style="margin-bottom: 10px; font-weight: bold;">Authentication Settings</div>
-                <label class="toggle-switch">
-                    <input type="checkbox" id="publicAuthToggle">
-                    <span class="toggle-slider"></span>
-                    <span class="toggle-label" id="publicAuthToggleLabel">Authentication Disabled</span>
-                </label>
-            `;
-            
-            // Initialize the toggle state
-            const toggle = document.getElementById('publicAuthToggle');
-            toggle.checked = false; // Default to unchecked since auth is disabled
-            
-            // Add event listener
-            toggle.addEventListener('change', async function() {
-                const newAuthRequired = this.checked;
-                
-                try {
-                    // When enabling auth, no token is needed
-                    const response = await fetch('/auth-status', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify({ authRequired: newAuthRequired })
-                    });
-                    
-                    const result = await response.json();
-                    
-                    if (result.success) {
-                        if (newAuthRequired) {
-                            // If auth is now required, remove the public toggle and show auth section
-                            document.getElementById('publicToggleContainer').remove();
-                            document.getElementById('auth-section').style.display = 'block';
-                            document.getElementById('main-content').style.display = 'none';
-                            removeAuthDisabledBanner();
-                            alert('Authentication has been enabled. Please sign in to continue.');
-                        }
-                    } else {
-                        // Revert toggle on error
-                        toggle.checked = !newAuthRequired;
-                        alert('Failed to update authentication settings');
-                    }
-                } catch (error) {
-                    console.error('Error updating auth status:', error);
-                    toggle.checked = !newAuthRequired;
-                    alert('Failed to update authentication settings');
-                }
-            });
-        }
+        // REMOVED floating public auth toggle
 
         function initializeAuth() {
             // Azure Best Practice: Add robust event handling for auth flows

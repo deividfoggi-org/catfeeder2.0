@@ -6,7 +6,7 @@ import path from 'path';
 import IndexController from './controllers/index';
 import ScheduleController from './controllers/schedule';
 import GPIOController from './controllers/GPIOController';
-import { Request, Response } from 'express';
+import { Request, Response, NextFunction } from 'express';
 import * as authHandler from './handlers/auth-handler';
 import { checkAuthentication, checkAuthForToggle } from './middleware/auth-middleware';
 
@@ -19,29 +19,41 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Apply auth middleware to all protected routes
-app.use('/api', checkAuthentication); // Protects all routes under /api
-app.use('/admin', checkAuthentication); // Protects all routes under /admin
-
 // Routes
 const router = express.Router();
 
-// Static routes
+// Static routes (no auth required)
 router.get('/', IndexController.index);
 
+// Protected API routes
+const apiRouter = express.Router();
+apiRouter.use(checkAuthentication); // Apply auth middleware to all API routes
+
 // Schedule API routes
-router.post('/schedules', ScheduleController.addSchedule);
-router.get('/schedules', ScheduleController.getSchedules);
-router.delete('/schedules/:id', ScheduleController.deleteSchedule);
-router.post('/schedules/delete-multiple', ScheduleController.deleteSchedules);
+apiRouter.post('/schedules', ScheduleController.addSchedule);
+apiRouter.get('/schedules', ScheduleController.getSchedules);
+apiRouter.delete('/schedules/:id', ScheduleController.deleteSchedule);
+apiRouter.post('/schedules/delete-multiple', ScheduleController.deleteSchedules);
 
 // GPIO routes
-router.post('/gpio/:pin/toggle', GPIOController.togglePin);
-router.post('/feed', GPIOController.activateFeeder);
-router.get('/feed-logs', GPIOController.getFeedLogs);
+apiRouter.post('/gpio/:pin/toggle', GPIOController.togglePin);
+apiRouter.post('/feed', GPIOController.activateFeeder);
 
-// Mount the router
-app.use('/', router);
+// Conditionally protected routes (depends on auth settings)
+const conditionalRouter = express.Router();
+conditionalRouter.get('/feed-logs', (req: Request, res: Response, next: NextFunction) => {
+  const authStatus = authHandler.getAuthStatus();
+  if (authStatus.authRequired) {
+    checkAuthentication(req, res, next);
+  } else {
+    next();
+  }
+}, GPIOController.getFeedLogs);
+
+// Mount the routers
+app.use('/', router); // Static routes
+app.use('/', conditionalRouter); // Conditionally protected routes
+app.use('/api', apiRouter); // Protected API routes
 
 // Initialize scheduler service
 import SchedulerService from './services/scheduler';

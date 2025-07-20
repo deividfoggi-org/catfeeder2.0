@@ -80,14 +80,14 @@ class GPIOController {
         try {
             const limit = parseInt(req.query.limit as string || '5', 10);
             const logs = GPIO.getFeedLogs(limit);
-            
+            // Always return logs as array, even if empty
             res.status(200).json({
-                logs,
-                count: logs.length
+                logs: Array.isArray(logs) ? logs : [],
+                count: Array.isArray(logs) ? logs.length : 0
             });
         } catch (error) {
             console.error('Error getting feed logs:', error);
-            res.status(500).json({ message: 'Failed to get feed logs' });
+            res.status(200).json({ logs: [], count: 0 }); // Always return logs array
         }
     }
 
