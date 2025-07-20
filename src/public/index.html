@@ -719,31 +719,50 @@
             // Show loading state
             const statusElement = document.getElementById('gpio-status');
             statusElement.innerText = 'Dispensing 1 portion...';
-            
-            fetch('/feed', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ portions: 1 })
-            })
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error('Network response was not ok');
+
+            (async () => {
+                let token = '';
+                const account = msalInstance.getActiveAccount();
+                if (account) {
+                    try {
+                        const tokenResponse = await msalInstance.acquireTokenSilent({
+                            scopes: ["openid", "profile", "User.Read"],
+                            account: account,
+                            forceRefresh: false
+                        });
+                        if (tokenResponse && tokenResponse.accessToken) {
+                            token = tokenResponse.accessToken;
+                        }
+                    } catch (error) {
+                        console.error("Token acquisition for feed failed:", error);
+                    }
                 }
-                return response.json();
-            })
-            .then(data => {
-                statusElement.innerText = data.message || 'Dispensed 1 portion successfully';
-                // Refresh feed logs after successful feed
-                loadFeedLogs();
-            })
-            .catch(error => {
-                console.error('Error dispensing portion:', error);
-                statusElement.innerText = 'Error dispensing portion';
-                // Also refresh logs to show any failed attempts
-                loadFeedLogs();
-            });
+                fetch('/api/feed', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+                    },
+                    body: JSON.stringify({ portions: 1 })
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    statusElement.innerText = data.message || 'Dispensed 1 portion successfully';
+                    // Refresh feed logs after successful feed
+                    loadFeedLogs();
+                })
+                .catch(error => {
+                    console.error('Error dispensing portion:', error);
+                    statusElement.innerText = 'Error dispensing portion';
+                    // Also refresh logs to show any failed attempts
+                    loadFeedLogs();
+                });
+            })();
         });
 
         // Clock functionality
