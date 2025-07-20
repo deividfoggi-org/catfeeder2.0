@@ -596,20 +596,6 @@
                     document.getElementById('schedule-status').innerText = 'Error adding schedule';
                 });
             })();
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error('Failed to add schedule');
-                }
-                return response.json();
-            })
-            .then(data => {
-                document.getElementById('schedule-status').innerText = `Schedule added successfully`;
-                loadSchedules();
-            })
-            .catch(error => {
-                console.error('Error adding schedule:', error);
-                document.getElementById('schedule-status').innerText = 'Error adding schedule';
-            });
         });
 
         async function loadSchedules() {
