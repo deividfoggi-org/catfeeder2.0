@@ -1,6 +1,17 @@
 /* Feed log limit control styles */
+
 .feed-log-limit-control {
     margin-bottom: 10px;
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 6px;
+}
+
+.feed-log-limit-input {
+    width: 50px;
+    padding: 2px 6px;
+    font-size: 1em;
 }
 
 .feed-log-limit-input {
