@@ -322,15 +322,20 @@
         <!-- Recent Feed Logs Section -->
         <section id="feed-logs">
             <h2>Recent Feed Activity</h2>
+            <div class="feed-log-limit-control">
+                <label for="feed-log-limit">Show last</label>
+                <input type="number" id="feed-log-limit" min="1" value="5" class="feed-log-limit-input">
+                <span>entries</span>
+            </div>
             <div id="feed-logs-container">
                 <div id="feed-logs-loading">Loading recent feed activity...</div>
-                <div id="feed-logs-content" style="display: none;">
+                <div id="feed-logs-content" class="feed-logs-content">
                     <div id="feed-logs-list"></div>
-                    <div id="feed-logs-empty" style="display: none;">
+                    <div id="feed-logs-empty" class="feed-logs-empty">
                         <p>No feed activity recorded yet.</p>
                     </div>
                 </div>
-                <div id="feed-logs-error" style="display: none;">
+                <div id="feed-logs-error" class="feed-logs-error">
                     <p>Unable to load feed activity. Please try again later.</p>
                 </div>
             </div>
@@ -980,6 +985,22 @@
         }
 
         // Feed logs functionality
+        let feedLogLimit = 5;
+        const feedLogLimitInput = document.getElementById('feed-log-limit');
+
+        if (feedLogLimitInput) {
+            feedLogLimitInput.value = feedLogLimit;
+            feedLogLimitInput.addEventListener('change', function() {
+                let newLimit = parseInt(this.value, 10);
+                if (isNaN(newLimit) || newLimit < 1) {
+                    newLimit = 5;
+                    this.value = 5;
+                }
+                feedLogLimit = newLimit;
+                loadFeedLogs();
+            });
+        }
+
         async function loadFeedLogs() {
             const loadingDiv = document.getElementById('feed-logs-loading');
             const contentDiv = document.getElementById('feed-logs-content');
@@ -1010,7 +1031,7 @@
                     }
                 }
 
-                const response = await fetch('/feed-logs?limit=5', {
+                const response = await fetch(`/feed-logs?limit=${feedLogLimit}`, {
                     headers: token ? { 'Authorization': `Bearer ${token}` } : {}
                 });
 

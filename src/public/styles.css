@@ -1,3 +1,24 @@
+/* Feed log limit control styles */
+.feed-log-limit-control {
+    margin-bottom: 10px;
+}
+
+.feed-log-limit-input {
+    width: 60px;
+}
+
+/* Feed logs section styles */
+.feed-logs-content {
+    display: none;
+}
+
+.feed-logs-empty {
+    display: none;
+}
+
+.feed-logs-error {
+    display: none;
+}
 body {
     font-family: Arial, sans-serif;
     margin: 0;
