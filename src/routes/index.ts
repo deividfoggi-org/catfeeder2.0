@@ -13,6 +13,7 @@ router.delete('/schedule/:id', ScheduleController.deleteSchedule);
 // GPIO routes
 router.post('/gpio/:pin/toggle', GPIOController.togglePin);
 router.post('/feed', GPIOController.activateFeeder);
+router.get('/feed-logs', GPIOController.getFeedLogs);
 
 export function setRoutes(app: express.Application) {
     app.get('/', IndexController.index);
