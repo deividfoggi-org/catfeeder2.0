@@ -39,16 +39,9 @@ apiRouter.post('/schedules/delete-multiple', ScheduleController.deleteSchedules)
 apiRouter.post('/gpio/:pin/toggle', GPIOController.togglePin);
 apiRouter.post('/feed', GPIOController.activateFeeder);
 
-// Conditionally protected routes (depends on auth settings)
+// Always require authentication for /feed-logs
 const conditionalRouter = express.Router();
-conditionalRouter.get('/feed-logs', (req: Request, res: Response, next: NextFunction) => {
-  const authStatus = authHandler.getAuthStatus();
-  if (authStatus.authRequired) {
-    checkAuthentication(req, res, next);
-  } else {
-    next();
-  }
-}, GPIOController.getFeedLogs);
+conditionalRouter.get('/feed-logs', checkAuthentication, GPIOController.getFeedLogs);
 
 // Mount the routers
 app.use('/', router); // Static routes

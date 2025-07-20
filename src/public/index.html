@@ -916,14 +916,33 @@
             errorDiv.style.display = 'none';
 
             try {
-                const response = await fetch('/feed-logs?limit=5');
-                
+                let token = '';
+                const account = msalInstance.getActiveAccount();
+                if (account) {
+                    try {
+                        const tokenResponse = await msalInstance.acquireTokenSilent({
+                            scopes: ["openid", "profile", "User.Read"],
+                            account: account,
+                            forceRefresh: false
+                        });
+                        if (tokenResponse && tokenResponse.accessToken) {
+                            token = tokenResponse.accessToken;
+                        }
+                    } catch (error) {
+                        console.error("Token acquisition for feed logs failed:", error);
+                    }
+                }
+
+                const response = await fetch('/feed-logs?limit=5', {
+                    headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+                });
+
                 if (!response.ok) {
                     throw new Error(`HTTP error! status: ${response.status}`);
                 }
 
                 const data = await response.json();
-                
+
                 // Hide loading
                 loadingDiv.style.display = 'none';
                 contentDiv.style.display = 'block';
@@ -935,7 +954,6 @@
                     data.logs.forEach(log => {
                         const logEntry = document.createElement('div');
                         logEntry.className = `feed-log-entry ${log.success ? 'success' : 'failure'}`;
-                        
                         const timestamp = new Date(log.timestamp);
                         const timeString = timestamp.toLocaleString('en-US', {
                             month: 'short',
@@ -944,7 +962,6 @@
                             minute: '2-digit',
                             hour12: true
                         });
-
                         logEntry.innerHTML = `
                             <div class="feed-log-time">${timeString}</div>
                             <div class="feed-log-details">
@@ -954,7 +971,6 @@
                                 </span>
                             </div>
                         `;
-                        
                         listDiv.appendChild(logEntry);
                     });
                 } else {
