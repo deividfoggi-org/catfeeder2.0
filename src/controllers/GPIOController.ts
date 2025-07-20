@@ -75,6 +75,22 @@ class GPIOController {
         }
     }
 
+    static getFeedLogs(req: Request, res: Response): void {
+        console.log('getFeedLogs called');
+        try {
+            const limit = parseInt(req.query.limit as string || '5', 10);
+            const logs = GPIO.getFeedLogs(limit);
+            
+            res.status(200).json({
+                logs,
+                count: logs.length
+            });
+        } catch (error) {
+            console.error('Error getting feed logs:', error);
+            res.status(500).json({ message: 'Failed to get feed logs' });
+        }
+    }
+
     static cleanup() {
         console.log('cleanup called');
         GPIOController.pins.forEach((pin, pinNumber) => {

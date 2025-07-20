@@ -38,6 +38,7 @@ router.post('/schedules/delete-multiple', ScheduleController.deleteSchedules);
 // GPIO routes
 router.post('/gpio/:pin/toggle', GPIOController.togglePin);
 router.post('/feed', GPIOController.activateFeeder);
+router.get('/feed-logs', GPIOController.getFeedLogs);
 
 // Mount the router
 app.use('/', router);
