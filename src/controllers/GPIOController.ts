@@ -46,33 +46,35 @@ class GPIOController {
 
     static activateFeeder(req: Request, res: Response): void {
         console.log('activateFeeder called with query:', req.query);
-        try {
-            const pinNumber = 17;
-            console.log('Using default pin for feeder:', pinNumber);
+        (async () => {
+            try {
+                const pinNumber = 17;
+                console.log('Using default pin for feeder:', pinNumber);
 
-            const portions = parseInt(req.query.portions as string || '1', 10);
-            console.log('Parsed portions:', portions);
+                const portions = parseInt(req.query.portions as string || '1', 10);
+                console.log('Parsed portions:', portions);
 
-            if (!GPIOController.pins.has(pinNumber)) {
-                console.log(`Initializing GPIO pin ${pinNumber}`);
-                GPIOController.pins.set(pinNumber, GPIO.initialize(pinNumber));
+                if (!GPIOController.pins.has(pinNumber)) {
+                    console.log(`Initializing GPIO pin ${pinNumber}`);
+                    GPIOController.pins.set(pinNumber, GPIO.initialize(pinNumber));
+                }
+
+                const pin = GPIOController.pins.get(pinNumber)!;
+                console.log(`Retrieved pin ${pinNumber}:`, pin);
+
+                // Await the feeder so logging happens before response
+                await GPIO.runFeeder(pin, portions);
+                console.log(`Feeder activated for ${portions} portion(s)`);
+
+                res.status(200).json({
+                    message: `Feeder activated for ${portions} portion(s)`,
+                    portions
+                });
+            } catch (error) {
+                console.error('Feeder activation error:', error);
+                res.status(500).json({ message: 'Failed to activate feeder' });
             }
-
-            const pin = GPIOController.pins.get(pinNumber)!;
-            console.log(`Retrieved pin ${pinNumber}:`, pin);
-
-            // Use the centralized method from GPIO
-            GPIO.runFeeder(pin, portions);
-            console.log(`Feeder activated for ${portions} portion(s)`);
-
-            res.status(200).json({
-                message: `Feeder activated for ${portions} portion(s)`,
-                portions
-            });
-        } catch (error) {
-            console.error('Feeder activation error:', error);
-            res.status(500).json({ message: 'Failed to activate feeder' });
-        }
+        })();
     }
 
     static getFeedLogs(req: Request, res: Response): void {
