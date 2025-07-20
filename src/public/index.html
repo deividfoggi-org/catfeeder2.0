@@ -556,13 +556,46 @@
             };
 
             // Send the request to the backend
-            fetch('/api/schedules', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(payload)
-            })
+            (async () => {
+                let token = '';
+                const account = msalInstance.getActiveAccount();
+                if (account) {
+                    try {
+                        const tokenResponse = await msalInstance.acquireTokenSilent({
+                            scopes: ["openid", "profile", "User.Read"],
+                            account: account,
+                            forceRefresh: false
+                        });
+                        if (tokenResponse && tokenResponse.accessToken) {
+                            token = tokenResponse.accessToken;
+                        }
+                    } catch (error) {
+                        console.error("Token acquisition for schedules failed:", error);
+                    }
+                }
+                fetch('/api/schedules', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+                    },
+                    body: JSON.stringify(payload)
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Failed to add schedule');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    document.getElementById('schedule-status').innerText = `Schedule added successfully`;
+                    loadSchedules();
+                })
+                .catch(error => {
+                    console.error('Error adding schedule:', error);
+                    document.getElementById('schedule-status').innerText = 'Error adding schedule';
+                });
+            })();
             .then(response => {
                 if (!response.ok) {
                     throw new Error('Failed to add schedule');
@@ -579,12 +612,34 @@
             });
         });
 
-        function loadSchedules() {
-            fetch('/api/schedules')
-                .then(response => response.json())
-                .then(data => {
-                    const tbody = document.getElementById('schedules-table').querySelector('tbody');
-                    tbody.innerHTML = '';
+        async function loadSchedules() {
+            let token = '';
+            const account = msalInstance.getActiveAccount();
+            if (account) {
+                try {
+                    const tokenResponse = await msalInstance.acquireTokenSilent({
+                        scopes: ["openid", "profile", "User.Read"],
+                        account: account,
+                        forceRefresh: false
+                    });
+                    if (tokenResponse && tokenResponse.accessToken) {
+                        token = tokenResponse.accessToken;
+                    }
+                } catch (error) {
+                    console.error("Token acquisition for schedules failed:", error);
+                }
+            }
+            try {
+                const response = await fetch('/api/schedules', {
+                    headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+                });
+                if (!response.ok) {
+                    throw new Error('Failed to fetch schedules');
+                }
+                const data = await response.json();
+                const tbody = document.getElementById('schedules-table').querySelector('tbody');
+                tbody.innerHTML = '';
+                if (Array.isArray(data)) {
                     data.forEach(schedule => {
                         const row = document.createElement('tr');
                         const selectCell = document.createElement('td');
@@ -595,7 +650,6 @@
                         const daysCell = document.createElement('td');
                         daysCell.innerText = schedule.days.map(day => dayMapping[day]).join(', ');
                         const timeCell = document.createElement('td');
-                        
                         // Convert 24-hour format to 12-hour format with AM/PM
                         let hours = parseInt(schedule.hours);
                         const minutes = parseInt(schedule.minutes || 0);
@@ -604,22 +658,21 @@
                         hours = hours ? hours : 12; // the hour '0' should be '12'
                         const formattedMinutes = minutes.toString().padStart(2, '0');
                         const formattedTime = `${hours}:${formattedMinutes} ${ampm}`;
-                        
                         timeCell.innerText = formattedTime;
-                        
                         const portionsCell = document.createElement('td');
                         portionsCell.innerText = `${schedule.portions} Portion${schedule.portions > 1 ? 's' : ''}`;
-                        
                         row.appendChild(selectCell);
                         row.appendChild(daysCell);
                         row.appendChild(timeCell);
                         row.appendChild(portionsCell);
                         tbody.appendChild(row);
                     });
-                })
-                .catch(error => {
-                    console.error('Error fetching schedules:', error);
-                });
+                } else {
+                    console.error('Error fetching schedules: Response is not an array', data);
+                }
+            } catch (error) {
+                console.error('Error fetching schedules:', error);
+            }
         }
 
         document.getElementById('delete-schedules').addEventListener('click', function() {
@@ -633,27 +686,46 @@
             document.getElementById('schedule-status').innerText = 'Deleting selected schedules...';
 
             // Send a POST request to delete multiple schedules
-            fetch('/api/schedules/delete-multiple', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ ids: selectedSchedules })
-            })
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error('Failed to delete schedules');
+            (async () => {
+                let token = '';
+                const account = msalInstance.getActiveAccount();
+                if (account) {
+                    try {
+                        const tokenResponse = await msalInstance.acquireTokenSilent({
+                            scopes: ["openid", "profile", "User.Read"],
+                            account: account,
+                            forceRefresh: false
+                        });
+                        if (tokenResponse && tokenResponse.accessToken) {
+                            token = tokenResponse.accessToken;
+                        }
+                    } catch (error) {
+                        console.error("Token acquisition for schedules failed:", error);
+                    }
                 }
-                return response.json();
-            })
-            .then(data => {
-                document.getElementById('schedule-status').innerText = 'Selected schedules deleted successfully';
-                loadSchedules(); // Reload the schedules after deletion
-            })
-            .catch(error => {
-                console.error('Error deleting schedules:', error);
-                document.getElementById('schedule-status').innerText = 'Error deleting schedules';
-            });
+                fetch('/api/schedules/delete-multiple', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+                    },
+                    body: JSON.stringify({ ids: selectedSchedules })
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Failed to delete schedules');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    document.getElementById('schedule-status').innerText = 'Selected schedules deleted successfully';
+                    loadSchedules(); // Reload the schedules after deletion
+                })
+                .catch(error => {
+                    console.error('Error deleting schedules:', error);
+                    document.getElementById('schedule-status').innerText = 'Error deleting schedules';
+                });
+            })();
         });
 
         // GPIO Test Button - Toggle GPIO pin 17
