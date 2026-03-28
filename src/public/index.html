@@ -297,6 +297,7 @@
         <!-- Title and Clock Section -->
         <div style="flex: 0 0 50%; display: flex; flex-direction: column; justify-content: center;">
             <h1 style="margin: 0;">Cat Feeder Management</h1>
+            <h3>Agnes and Pepper Exclusive</h3>
             <div id="clock" style="margin-top: 5px;"></div>
         </div>
         <!-- Authentication Section -->
@@ -864,8 +865,9 @@
                 
                 // Setup auth toggle when user is signed in
                 setupAuthToggle();
-                // Always load feed logs when signed in
+                // Load feed logs and schedules now that auth is ready
                 loadFeedLogs();
+                loadSchedules();
             } else {
                 // User is signed out - check if auth is required
                 fetch('/auth-status')
@@ -878,14 +880,13 @@
                             document.getElementById('main-content').style.display = 'none';
                             resetSignInButton();
                         } else {
-                            document.getElementById('auth-section').style.display = 'none';
+                            document.getElementById('auth-section').style.display = 'block';
                             document.getElementById('userInfo').style.display = 'none';
                             document.getElementById('main-content').style.display = 'block';
                             showAuthDisabledBanner();
-                            // REMOVE floating auth toggle for public
-                            // showAuthToggleForPublic();
-                            // Always load feed logs for public
+                            // Load data for public mode
                             loadFeedLogs();
+                            loadSchedules();
                         }
                     })
                     .catch(error => {
@@ -1269,7 +1270,6 @@
             
             // Other initialization code
             checkAuthStatus();
-            loadSchedules();
         });
 
         const logoutButton = document.getElementById("logoutButton");
@@ -1281,8 +1281,6 @@
             if (document.getElementById('authToggle')) {
                 initAuthToggle();
             }
-            // Load feed logs when the page loads
-            loadFeedLogs();
         });
 
         const loginButton = document.getElementById('loginButton');
