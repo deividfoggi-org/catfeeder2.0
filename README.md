@@ -183,6 +183,27 @@ By running the application as a service, it will automatically start on boot, en
 6. **Test the Application**:
    - Open a web browser and navigate to `http://<raspberry-pi-ip>:<port>` to confirm the application is running with the latest changes.
 
+## How to Connect to the Raspberry Pi
+
+### Option 1: Raspberry Pi Connect (Browser)
+
+Use the Raspberry Pi Connect service for remote access through the browser without needing to be on the same network.
+
+1. Go to [https://connect.raspberrypi.com](https://connect.raspberrypi.com)
+2. Sign in with your Microsoft personal account
+3. Select the Raspberry Pi from the device list
+4. Use the remote shell or screen sharing to manage the device
+
+### Option 2: SSH
+
+Connect directly via SSH when on the same local network:
+
+```
+ssh cat@192.168.15.4
+```
+
+Enter the password when prompted. Once connected, the project is located at `~/catfeeder2.0`.
+
 ## How to access the log using journalctl
 
 Run the following command in Raspberry Pi
