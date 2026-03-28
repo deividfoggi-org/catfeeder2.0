@@ -864,8 +864,9 @@
                 
                 // Setup auth toggle when user is signed in
                 setupAuthToggle();
-                // Always load feed logs when signed in
+                // Load feed logs and schedules now that auth is ready
                 loadFeedLogs();
+                loadSchedules();
             } else {
                 // User is signed out - check if auth is required
                 fetch('/auth-status')
@@ -1269,7 +1270,6 @@
             
             // Other initialization code
             checkAuthStatus();
-            loadSchedules();
         });
 
         const logoutButton = document.getElementById("logoutButton");
@@ -1281,8 +1281,6 @@
             if (document.getElementById('authToggle')) {
                 initAuthToggle();
             }
-            // Load feed logs when the page loads
-            loadFeedLogs();
         });
 
         const loginButton = document.getElementById('loginButton');
